@@ -381,7 +381,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const enemies = state.enemies.map(e => {
       if (e.id === id && e.state === 'active') {
         const newHp = Math.max(0, e.hp - 25);
-        playSound('hit'); // Suara saat kena tembak
         if (newHp === 0) {
           enemyWasKilled = true;
           playSound('zombie'); // Suara kematian bot (zombie style)

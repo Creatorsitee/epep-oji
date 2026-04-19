@@ -42,7 +42,6 @@ function HUD() {
   useEffect(() => {
     if (lastHitMarkerTime > 0) {
       setShowHitMarker(true);
-      playSound('hit');
       const timer = setTimeout(() => setShowHitMarker(false), 150);
       return () => clearTimeout(timer);
     }
