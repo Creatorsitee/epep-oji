@@ -192,7 +192,7 @@ export default function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
-          <p className="text-amber-600 font-black text-center tracking-[0.3em] text-lg uppercase italic">POSISI TEMPUR</p>
+          <p className="text-amber-600 font-black text-center tracking-[0.3em] text-lg uppercase italic">MIRINGKAN HP</p>
           <p className="text-amber-600/50 text-[10px] mt-2 text-center font-bold">MIRINGKAN PERANGKAT UNTUK VISUAL MAKSIMAL</p>
         </div>
       )}

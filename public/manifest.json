@@ -1,0 +1,22 @@
+{
+  "name": "FREE FIRE",
+  "short_name": "FREE FIRE",
+  "description": "Battle Royale Arena - Survival of the Fittest",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0c",
+  "theme_color": "#f59e0b",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/freefire/192/192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://picsum.photos/seed/freefire/512/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
