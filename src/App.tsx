@@ -79,49 +79,29 @@ function HUD() {
         </div>
       </div>
 
-      {/* HUD Left - Score & Leaderboard */}
-      <div className="absolute top-2 left-2 md:top-4 md:left-4 flex flex-col gap-1 md:gap-4 pointer-events-none">
-        <div className="text-amber-500 text-xs md:text-2xl font-black italic tracking-tighter drop-shadow-md">
-          PANGKAT: {score.toString().padStart(6, '0')}
-        </div>
-        
-        {/* Leaderboard */}
-        {!isMobile && (
-          <div className="bg-zinc-900/80 border-l-4 border-amber-600 p-3 rounded-r w-48 flex flex-col gap-1 backdrop-blur-sm">
-            <div className="text-amber-500/70 text-[10px] font-black mb-1 border-b border-zinc-800 pb-1 italic">UNIT TERBAIK</div>
-            {leaderboard.slice(0, 5).map((p, i) => (
-              <div key={p.id} className={`flex justify-between text-[10px] uppercase font-bold ${p.isMe ? 'text-amber-400' : 'text-zinc-500'}`}>
-                <span>{i + 1}. {p.id.substring(0, 10)}</span>
-                <span>{p.score}</span>
-              </div>
-            ))}
+      {/* HUD Left - Score */}
+      <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
+        <div className="hud-element flex items-center gap-2">
+          <div className="text-amber-500 font-black italic text-xl tracking-tighter">
+            {score.toString().padStart(6, '0')}
           </div>
-        )}
+          <div className="text-[10px] text-zinc-400 font-bold uppercase italic">PTS</div>
+        </div>
       </div>
       
-      {/* HUD Right - Time, Leave, Events */}
-      <div className="absolute top-2 right-2 md:top-4 md:right-4 flex flex-col items-end gap-1 md:gap-2 pointer-events-auto">
+      {/* HUD Right - Time & Mission */}
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
         {gameState === 'playing' && (
-          <div className="text-amber-500 text-xs md:text-2xl font-black italic drop-shadow-md pointer-events-none">
-            OPS: {Math.floor(timeLeft / 60)}:{(Math.floor(timeLeft) % 60).toString().padStart(2, '0')}
+          <div className="hud-element text-amber-500 text-lg font-black italic tracking-widest">
+            {Math.floor(timeLeft / 60)}:{(Math.floor(timeLeft) % 60).toString().padStart(2, '0')}
           </div>
         )}
         <button
           onClick={leaveGame}
-          className="px-3 py-1 bg-zinc-800 border border-zinc-600 text-zinc-400 text-[10px] md:text-xs font-black rounded hover:bg-red-900 hover:text-white transition-all uppercase italic"
+          className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all"
         >
           BATALKAN MISI
         </button>
-        {!isMobile && <div className="text-cyan-400/50 text-xs mt-1 pointer-events-none uppercase tracking-widest font-bold">ESC to unlock cursor</div>}
-
-        {/* Event Log */}
-        <div className="mt-2 md:mt-4 flex flex-col items-end gap-1 pointer-events-none">
-          {events.slice(-3).map(event => (
-            <div key={event.id} className="text-[10px] md:text-xs font-bold text-fuchsia-400 bg-black/70 px-3 py-1.5 rounded-l border-l-2 border-fuchsia-500 animate-pulse backdrop-blur-sm">
-              {event.message}
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Multiplayer Info */}
