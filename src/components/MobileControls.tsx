@@ -26,7 +26,9 @@ function Joystick({ onMove, className, label }: JoystickProps) {
     
     origin.current = { x: centerX, y: centerY };
     isDragging.current = true;
-    containerRef.current.setPointerCapture(e.pointerId);
+    try {
+      containerRef.current.setPointerCapture(e.pointerId);
+    } catch (err) {}
     
     // Process initial touch immediately
     handlePointerMove(e);
@@ -65,7 +67,9 @@ function Joystick({ onMove, className, label }: JoystickProps) {
     setPosition({ x: 0, y: 0 });
     onMove(0, 0);
     if (containerRef.current) {
-      containerRef.current.releasePointerCapture(e.pointerId);
+      try {
+        containerRef.current.releasePointerCapture(e.pointerId);
+      } catch (err) {}
     }
   };
 
@@ -191,17 +195,17 @@ export function MobileControls() {
               className={`pointer-events-auto w-24 h-24 rounded-full border-4 border-fuchsia-500 flex items-center justify-center active:scale-95 transition-all touch-none ${shooting ? 'bg-fuchsia-500/50 scale-110' : 'bg-fuchsia-500/20'}`}
               onPointerDown={(e) => {
                 e.stopPropagation(); // Avoid tracking look when shooting
-                e.currentTarget.setPointerCapture(e.pointerId);
+                try { e.currentTarget.setPointerCapture(e.pointerId); } catch(err) {}
                 setShooting(true);
               }}
               onPointerUp={(e) => {
                 e.stopPropagation();
-                e.currentTarget.releasePointerCapture(e.pointerId);
+                try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
                 setShooting(false);
               }}
               onPointerCancel={(e) => {
                 e.stopPropagation();
-                e.currentTarget.releasePointerCapture(e.pointerId);
+                try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
                 setShooting(false);
               }}
             >

@@ -585,7 +585,12 @@ export default function App() {
                   className="grid grid-cols-2 gap-2 md:gap-4 shrink-0 w-full max-w-[280px] md:max-w-xl"
                 >
                   <button
-                    onClick={() => startGame()}
+                    onClick={() => {
+                      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(err => console.log(err));
+                      }
+                      startGame();
+                    }}
                     className="w-full px-2 md:px-12 py-3 md:py-6 bg-white text-black text-xs md:text-xl font-black italic tracking-tighter hover:bg-zinc-200 transition-all active:scale-95 leading-none shadow-[0_0_20px_rgba(255,255,255,0.2)] rounded-sm flex items-center justify-center gap-1.5 md:gap-2"
                   >
                     <RefreshCw className="w-3.5 h-3.5 md:w-6 md:h-6" />

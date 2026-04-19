@@ -79,9 +79,7 @@ export function Game() {
       
       <Physics gravity={[0, -20, 0]}>
         <GameLoop />
-        <Suspense fallback={null}>
-          <Arena />
-        </Suspense>
+        <Arena />
         <Player />
         {enemies.map(enemy => (
           <Enemy key={enemy.id} data={enemy} />

@@ -505,6 +505,17 @@ export const useGameStore = create<GameStore>()(
     
     if (newHp <= 0) {
       playSound('gameover');
+      
+      // Explicitly exit fullscreen mode when game over
+      if (typeof document !== 'undefined' && document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(err => console.log('Fullscreen exit error:', err));
+      }
+      
+      // Release pointer lock
+      if (typeof document !== 'undefined' && document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+
       return {
         playerHp: 0,
         gameState: 'gameover',

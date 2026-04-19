@@ -38,6 +38,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Hanya tangani request HTTP/HTTPS
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   // Cache-first strategy for defined assets, Network-first with caching for the rest
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {

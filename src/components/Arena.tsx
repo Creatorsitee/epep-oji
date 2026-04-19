@@ -123,25 +123,41 @@ export function Arena() {
 }
 
 function Wall({ name, position, rotation, isMobile }: { name: string, position: [number, number, number], rotation: [number, number, number], isMobile: boolean }) {
-  const wallTexture = useTexture("https://cyzxfxkszavvotjjcsba.supabase.co/storage/v1/object/public/photos/uploads/1776581289126-58yr9.jpg");
+  const [wallTexture, setWallTexture] = useState<THREE.Texture | null>(null);
   
   useEffect(() => {
-    if (wallTexture) {
-      wallTexture.wrapS = THREE.RepeatWrapping;
-      wallTexture.wrapT = THREE.RepeatWrapping;
-      // Dinding panjangnya 200, tingginya 20. Kita atur tekstur agar tidak melebar jelek.
-      // 10 kali pengulangan secara horisontal agar pas proporsinya.
-      wallTexture.repeat.set(10, 1);
-      wallTexture.needsUpdate = true;
-    }
-  }, [wallTexture]);
+    // Gunakan standar TextureLoader daripada useTexture(Drei) yang melempar Suspense Error saat gagal (offline)
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      "https://cyzxfxkszavvotjjcsba.supabase.co/storage/v1/object/public/photos/uploads/1776581289126-58yr9.jpg",
+      (texture) => {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        // Dinding panjangnya 200, tingginya 20. Kita atur tekstur agar tidak melebar jelek.
+        // 10 kali pengulangan secara horisontal agar pas proporsinya.
+        texture.repeat.set(10, 1);
+        texture.needsUpdate = true;
+        setWallTexture(texture);
+      },
+      undefined,
+      (err) => {
+        console.warn("Gagal memuat tekstur gambar, kembali menggunakan material dinding default. (Mode Offline)");
+      }
+    );
+  }, []);
 
   return (
     <RigidBody type="fixed" name={name} position={position} rotation={rotation}>
       {/* Solid Wall */}
       <mesh receiveShadow={!isMobile}>
         <boxGeometry args={[200, 20, 2]} />
-        <meshStandardMaterial map={wallTexture} color="#ffffff" roughness={0.9} metalness={0.1} shadowSide={THREE.DoubleSide} />
+        <meshStandardMaterial 
+          map={wallTexture || undefined} 
+          color={wallTexture ? "#ffffff" : "#999999"} 
+          roughness={0.9} 
+          metalness={0.1} 
+          shadowSide={THREE.DoubleSide} 
+        />
       </mesh>
     </RigidBody>
   );
