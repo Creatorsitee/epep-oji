@@ -352,6 +352,7 @@ export const useGameStore = create<GameStore>()(
   },
 
   leaveGame: () => {
+    console.log("Leaving game...");
     const { socket } = get();
     if (socket) {
       socket.disconnect();

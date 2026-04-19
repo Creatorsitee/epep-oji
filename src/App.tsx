@@ -103,21 +103,23 @@ function HUD() {
       </div>
       
       {/* HUD Right - Mission Control */}
-      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
-        <div className={`text-[9px] font-black px-2 py-0.5 rounded border ${socket ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors`}>
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto z-[9999]">
+        <div className={`text-[9px] font-black px-2 py-0.5 rounded border ${socket ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors bg-black/40`}>
           {socket ? 'Multiplayer Online' : 'Solo Mode Offline'}
         </div>
         <button
-          onPointerDown={(e) => {
+          onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             leaveGame();
           }}
-          className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all select-none cursor-pointer"
+          onPointerDown={(e) => e.stopPropagation()}
+          className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all select-none cursor-pointer bg-red-600/20 border-red-500/50 px-4 py-2"
         >
           KELUAR GAME
         </button>
         {!isMobile && (
-          <span className="text-[8px] text-zinc-600 uppercase font-bold tracking-tighter">Tekan ESC untuk kursor</span>
+          <span className="text-[8px] text-zinc-600 uppercase font-bold tracking-tighter bg-black/20 px-1">Tekan ESC untuk kursor</span>
         )}
       </div>
 

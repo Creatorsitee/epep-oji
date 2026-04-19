@@ -1,12 +1,10 @@
-const CACHE_NAME = 'free-fire-cache-v2';
+const CACHE_NAME = 'free-fire-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/src/main.tsx',
-  '/src/App.tsx',
-  '/src/store.ts',
-  '/index.css'
+  '/index.css',
+  'https://cyzxfxkszavvotjjcsba.supabase.co/storage/v1/object/public/photos/uploads/1776568779516-oj5gt6.jpg'
 ];
 
 // Offline fallback image
@@ -16,9 +14,12 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Opened cache');
+      // Use return cache.addAll(...) but ignore individual failures if needed, 
+      // though these 4 should exist.
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -33,15 +34,20 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  // Stale-while-revalidate strategy
+  // Cache-first strategy for defined assets, Network-first with caching for the rest
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        // Only cache valid responses
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then((networkResponse) => {
+        // Cache new successful requests
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -49,13 +55,16 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        // If network fails and it's an image, we could provide fallback
+        // Offline fallback
         if (event.request.destination === 'image') {
           return caches.match(FALLBACK_IMAGE);
         }
+        // If it's a navigation request, return cached index.html
+        if (event.request.mode === 'navigate') {
+          return caches.match('/');
+        }
       });
-
-      return cachedResponse || fetchPromise;
     })
   );
 });
+
