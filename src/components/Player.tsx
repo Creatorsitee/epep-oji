@@ -128,6 +128,7 @@ export function Player() {
 
     // Apply recoil and muzzle flash
     if (gunVisualRef.current) {
+      // Recoil: push camera-local offset back
       gunVisualRef.current.position.z = -0.4;
       gunVisualRef.current.rotation.x = 0.1;
     }
@@ -314,10 +315,16 @@ export function Player() {
     
     // Recover recoil and muzzle flash
     if (gunVisualRef.current) {
-      // Recoil recovery for the gunVisualRef local Z-offset
-      // Reset position to base local [0.4, -0.3, -0.6] + sway
+      // Recoil recovery for the gunVisualRef local Z-offset, maintaining sway
       const baseZ = -0.6;
-      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, baseZ, delta * 15);
+      const bobY = Math.sin(bobbing.current) * 0.015;
+      const bobX = Math.cos(bobbing.current * 0.5) * 0.01;
+      
+      const targetZ = baseZ;
+      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, targetZ, delta * 15);
+      gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, 0.4 + bobX, delta * 15);
+      gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, -0.3 + bobY, delta * 15);
+      
       gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 15);
     }
     if (muzzleFlashRef.current && muzzleFlashRef.current.visible) {
