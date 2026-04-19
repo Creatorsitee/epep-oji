@@ -472,6 +472,11 @@ export const useGameStore = create<GameStore>()(
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
+    
+    // Explicitly exit fullscreen mode when returning to menu
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(err => console.log(err));
+    }
 
     set({
       gameState: 'menu',

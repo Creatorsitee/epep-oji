@@ -112,7 +112,9 @@ export function MobileControls() {
   const handleTrackpadPointerDown = (e: React.PointerEvent) => {
     isTouchingTrackpad.current = true;
     lastTouch.current = { x: e.clientX, y: e.clientY };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch (err) {}
   };
 
   const handleTrackpadPointerMove = (e: React.PointerEvent) => {
@@ -134,7 +136,9 @@ export function MobileControls() {
   const handleTrackpadPointerUp = (e: React.PointerEvent) => {
     isTouchingTrackpad.current = false;
     setMobileInput({ look: { x: 0, y: 0 } });
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch (err) {}
   };
 
   return (
@@ -149,10 +153,13 @@ export function MobileControls() {
 
       {/* Right Area - Trackpad Look & Shoot Area */}
       <div 
-        className="w-3/5 h-full relative pointer-events-auto"
+        className="w-3/5 h-full relative pointer-events-auto bg-black/0 touch-none"
         onPointerDown={handleTrackpadPointerDown}
         onPointerMove={handleTrackpadPointerMove}
         onPointerUp={handleTrackpadPointerUp}
+        onPointerCancel={handleTrackpadPointerUp}
+        onPointerLeave={handleTrackpadPointerUp}
+        style={{ touchAction: 'none' }}
       >
         {/* Actions Container (Lower Right) */}
         <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 flex items-end gap-3 pointer-events-none pb-2 pr-2">
