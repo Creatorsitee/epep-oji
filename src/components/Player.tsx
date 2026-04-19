@@ -102,6 +102,7 @@ export function Player() {
     
     // Consume ammo
     if (!consumeAmmo()) {
+      playSound('hit'); // Klik saat mag kosong
       reload(); // Auto-reload if empty
       return;
     }
@@ -117,20 +118,6 @@ export function Player() {
     const rayStart = camera.position.clone().add(raycaster.ray.direction.clone().multiplyScalar(0.8));
     const ray = new rapier.Ray(rayStart, raycaster.ray.direction);
     const hit = world.castRay(ray, MAX_LASER_DIST, true);
-    
-    // Check if hitting bot for crosshair feedback
-    let isTargeting = false;
-    if (hit) {
-      const collider = hit.collider;
-      const rb = collider.parent();
-      if (rb && rb.userData) {
-        const userData = rb.userData as { name?: string };
-        if (userData.name?.startsWith('bot-')) {
-          isTargeting = true;
-        }
-      }
-    }
-    useGameStore.getState().setTargetingBot(isTargeting);
 
     const startPosVec = new THREE.Vector3();
     if (gunBarrelRef.current) {
@@ -139,11 +126,6 @@ export function Player() {
       startPosVec.copy(camera.position);
     }
     const startPos: [number, number, number] = [startPosVec.x, startPosVec.y, startPosVec.z];
-
-    // Apply recoil and muzzle flash
-    if (gunVisualRef.current) {
-      // Recoil disabled per request
-    }
     
     if (muzzleFlashRef.current) {
       muzzleFlashRef.current.visible = true;
@@ -306,10 +288,36 @@ export function Player() {
     // Gun bobbing and sway
     const isMoving = velocity.x ** 2 + velocity.z ** 2 > 0.1;
     if (isMoving) {
-      bobbing.current += delta * 10;
+      const prevBob = bobbing.current;
+      bobbing.current += delta * 12; // Sedikit lebih cepat untuk footstep pace
+      
+      // Play footstep sound at peak or trough
+      if (Math.sin(prevBob) < 0 && Math.sin(bobbing.current) >= 0) {
+        playSound('step');
+      }
     } else {
       bobbing.current = THREE.MathUtils.lerp(bobbing.current, 0, delta * 5);
     }
+
+    // Continuous targeting raycast for crosshair color
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const rayStart = camera.position.clone().add(raycaster.ray.direction.clone().multiplyScalar(0.8));
+    const ray = new rapier.Ray(rayStart, raycaster.ray.direction);
+    const hit = world.castRay(ray, MAX_LASER_DIST, true);
+    
+    let isTargeting = false;
+    if (hit) {
+      const collider = hit.collider;
+      const rb = collider.parent();
+      if (rb && rb.userData) {
+        const userData = rb.userData as { name?: string };
+        if (userData.name?.startsWith('bot-') || (userData.name !== 'player' && useGameStore.getState().otherPlayers[userData.name!])) {
+          isTargeting = true;
+        }
+      }
+    }
+    useGameStore.getState().setTargetingBot(isTargeting);
     
     // Hitung bobbing
     const bobY = Math.sin(bobbing.current) * 0.015;

@@ -9,6 +9,7 @@ import { RigidBody, RapierRigidBody, useRapier, CapsuleCollider } from '@react-t
 import * as THREE from 'three';
 import { useGameStore, EnemyData } from '../store';
 import { Text } from '@react-three/drei';
+import { playSound } from '../utils/audio';
 
 const ENEMY_SPEED = 2.5; // Slightly slower
 const CHASE_DIST = 15;
@@ -101,6 +102,7 @@ export function Enemy({ data }: { data: EnemyData }) {
       // Shooting logic
       const now = Date.now();
       if (closestDist < SHOOT_DIST && now - lastShootTime.current > SHOOT_COOLDOWN) {
+        playSound('enemyShoot');
         // Raycast to check line of sight
         const rayDir = new THREE.Vector3().subVectors(closestTargetPos, currentPos).normalize();
         

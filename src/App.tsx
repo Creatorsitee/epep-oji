@@ -15,8 +15,11 @@ function HUD() {
   const timeLeft = useGameStore(state => state.timeLeft);
   const playerState = useGameStore(state => state.playerState);
   const otherPlayers = useGameStore(state => state.otherPlayers);
+  const enemies = useGameStore(state => state.enemies);
   const events = useGameStore(state => state.events);
+  const activeBots = enemies.filter(e => e.state === 'active').length;
   const playerCount = Object.keys(otherPlayers).length + 1;
+  const totalSquad = playerCount + activeBots;
   const leaveGame = useGameStore(state => state.leaveGame);
   const playerHp = useGameStore(state => state.playerHp);
   const maxPlayerHp = useGameStore(state => state.maxPlayerHp);
@@ -105,10 +108,17 @@ function HUD() {
         </button>
       </div>
 
-      {/* Multiplayer Info */}
+      {/* HUD Info Center - Unit Tracking */}
       <div className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
-        <div className="text-zinc-500 text-[10px] md:text-sm font-bold bg-zinc-950/40 px-3 py-0.5 rounded-full border border-zinc-800">
-          SQUAD SIZE: {playerCount} / 24
+        <div className="flex gap-4">
+          <div className="hud-element text-[10px] font-bold flex flex-col items-center min-w-[80px]">
+            <span className="text-zinc-500 uppercase tracking-widest">SQUAD</span>
+            <span className="text-amber-500 text-lg italic">{playerCount}</span>
+          </div>
+          <div className="hud-element text-[10px] font-bold flex flex-col items-center min-w-[80px]">
+            <span className="text-zinc-500 uppercase tracking-widest">BATTLE BOTS</span>
+            <span className="text-amber-500 text-lg italic">{activeBots}</span>
+          </div>
         </div>
       </div>
 

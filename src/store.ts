@@ -127,7 +127,7 @@ const INITIAL_ENEMIES: EnemyData[] = [
 export const useGameStore = create<GameStore>((set, get) => ({
   gameState: 'menu',
   score: 0,
-  timeLeft: 120, // 2 minutes
+  timeLeft: 300, // 5 minutes
   playerState: 'active',
   playerDisabledUntil: 0,
   playerHp: 100,
@@ -184,7 +184,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ 
         otherPlayers,
         gameState: 'playing',
-        timeLeft: 120,
+        timeLeft: 300,
         score: 0,
         ammo: 30,
         isReloading: false,
@@ -329,7 +329,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       particles: [],
       events: [],
       score: 0,
-      timeLeft: 120,
+      timeLeft: 300,
       playerState: 'active'
     });
   },
@@ -386,8 +386,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const enemies = state.enemies.map(e => {
       if (e.id === id && e.state === 'active') {
         const newHp = Math.max(0, e.hp - 25);
+        playSound('hit'); // Suara saat kena tembak
         if (newHp === 0) {
           enemyWasKilled = true;
+          playSound('zombie'); // Suara kematian bot (zombie style)
           return { 
             ...e, 
             hp: 0, 

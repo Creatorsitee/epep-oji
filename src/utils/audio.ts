@@ -1,6 +1,6 @@
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' | 'zombie' | 'gameover' | 'victory') => {
+export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' | 'zombie' | 'gameover' | 'victory' | 'step' | 'enemyShoot') => {
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
@@ -19,6 +19,28 @@ export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' |
     osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
     
     gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+    
+    osc.start(t);
+    osc.stop(t + 0.1);
+  } else if (type === 'step') {
+    // Soft low thud for footstep
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(60, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.05);
+    
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+    
+    osc.start(t);
+    osc.stop(t + 0.05);
+  } else if (type === 'enemyShoot') {
+    // Slightly different shoot sound for enemies
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(100, t);
+    osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+    
+    gain.gain.setValueAtTime(0.15, t);
     gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
     
     osc.start(t);
