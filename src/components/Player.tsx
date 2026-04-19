@@ -309,13 +309,15 @@ export function Player() {
       gunGroupRef.current.quaternion.copy(camera.quaternion);
     }
     
-    // Recover recoil dan posisikan senjata
+    // Recover/Smooth posisi senjata
+    // Kurangi nilai lerp (delta * 15 -> delta * 8) untuk gerakan yang lebih malas/halus
     if (gunVisualRef.current) {
-      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, targetBasePos.z, delta * 15);
-      gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, targetBasePos.x, delta * 15);
-      gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, targetBasePos.y, delta * 15);
+      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, targetBasePos.z, delta * 8);
+      gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, targetBasePos.x, delta * 8);
+      gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, targetBasePos.y, delta * 8);
       
-      gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 15);
+      // Rotary smoothing
+      gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 8);
     }
     if (muzzleFlashRef.current && muzzleFlashRef.current.visible) {
       if (Date.now() - lastShootTime.current > 50) {

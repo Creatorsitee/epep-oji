@@ -221,7 +221,7 @@ export function Enemy({ data }: { data: EnemyData }) {
       userData={{ name: data.id }}
     >
       <CapsuleCollider args={[0.5, 0.5]} position={[0, 1, 0]} />
-      <group ref={groupRef} position={[0, 0, 0]}>
+      <group ref={groupRef} position={[0, 0, 0]} visible={data.state === 'active'}>
         {/* Character Body */}
         <mesh castShadow position={[0, 1.0, 0]}>
           <capsuleGeometry args={[0.5, charVariation.type === 'zombie' ? 1.0 : 0.8, 4, 8]} />
