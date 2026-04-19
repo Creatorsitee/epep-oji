@@ -1,6 +1,6 @@
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump') => {
+export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' | 'zombie' | 'gameover' | 'victory') => {
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
@@ -69,5 +69,39 @@ export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump') 
 
     osc.start(t);
     osc.stop(t + 0.15);
+  } else if (type === 'zombie') {
+    // Low, gritty sound for zombie
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, t);
+    osc.frequency.linearRampToValueAtTime(60, t + 0.3);
+    
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+    
+    osc.start(t);
+    osc.stop(t + 0.3);
+  } else if (type === 'gameover') {
+    // Descending sad tone
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, t);
+    osc.frequency.linearRampToValueAtTime(100, t + 0.8);
+    
+    gain.gain.setValueAtTime(0.5, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+
+    osc.start(t);
+    osc.stop(t + 0.8);
+  } else if (type === 'victory') {
+    // Ascending cheerful sequence (this would take complex scheduler for melody, simplified as short blip)
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, t);
+    osc.frequency.setValueAtTime(600, t + 0.1);
+    osc.frequency.setValueAtTime(800, t + 0.2);
+    
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+
+    osc.start(t);
+    osc.stop(t + 0.3);
   }
 };

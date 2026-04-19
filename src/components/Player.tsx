@@ -128,9 +128,7 @@ export function Player() {
 
     // Apply recoil and muzzle flash
     if (gunVisualRef.current) {
-      // Recoil: push camera-local offset back
-      gunVisualRef.current.position.z = -0.4;
-      gunVisualRef.current.rotation.x = 0.1;
+      // Recoil disabled per request
     }
     
     if (muzzleFlashRef.current) {
@@ -299,31 +297,23 @@ export function Player() {
       bobbing.current = THREE.MathUtils.lerp(bobbing.current, 0, delta * 5);
     }
     
+    // Hitung bobbing
+    const bobY = Math.sin(bobbing.current) * 0.015;
+    const bobX = Math.cos(bobbing.current * 0.5) * 0.01;
+    
+    // Target posisi senjata (Base + Sway)
+    const targetBasePos = new THREE.Vector3(0.4 + bobX, -0.3 + bobY, -0.6);
+
     if (gunGroupRef.current) {
       gunGroupRef.current.position.copy(camera.position);
       gunGroupRef.current.quaternion.copy(camera.quaternion);
-      
-      // Weapon sway based on movement
-      const bobY = Math.sin(bobbing.current) * 0.015;
-      const bobX = Math.cos(bobbing.current * 0.5) * 0.01;
-      
-      // Apply sway locally to the visual child 
-      if(gunVisualRef.current) {
-        gunVisualRef.current.position.set(0.4 + bobX, -0.3 + bobY, -0.6);
-      }
     }
     
-    // Recover recoil and muzzle flash
+    // Recover recoil dan posisikan senjata
     if (gunVisualRef.current) {
-      // Recoil recovery for the gunVisualRef local Z-offset, maintaining sway
-      const baseZ = -0.6;
-      const bobY = Math.sin(bobbing.current) * 0.015;
-      const bobX = Math.cos(bobbing.current * 0.5) * 0.01;
-      
-      const targetZ = baseZ;
-      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, targetZ, delta * 15);
-      gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, 0.4 + bobX, delta * 15);
-      gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, -0.3 + bobY, delta * 15);
+      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, targetBasePos.z, delta * 15);
+      gunVisualRef.current.position.x = THREE.MathUtils.lerp(gunVisualRef.current.position.x, targetBasePos.x, delta * 15);
+      gunVisualRef.current.position.y = THREE.MathUtils.lerp(gunVisualRef.current.position.y, targetBasePos.y, delta * 15);
       
       gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 15);
     }

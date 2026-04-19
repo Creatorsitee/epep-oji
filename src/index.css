@@ -2,20 +2,28 @@
 
 @layer base {
   body {
-    @apply cursor-crosshair;
+    @apply cursor-crosshair bg-slate-900 text-slate-100 font-sans;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 }
 
-@keyframes noise {
-  0% { transform: translate(0,0) }
-  10% { transform: translate(-5%,-5%) }
-  20% { transform: translate(-10%,5%) }
-  30% { transform: translate(5%,-10%) }
-  40% { transform: translate(-5%,15%) }
-  50% { transform: translate(-10%,5%) }
-  60% { transform: translate(15%,0) }
-  70% { transform: translate(0,10%) }
-  80% { transform: translate(-15%,0) }
-  90% { transform: translate(10%,5%) }
-  100% { transform: translate(5%,0) }
+/* UI Overlay Improvements */
+#ui-root {
+  @apply fixed inset-0 pointer-events-none z-50 p-4;
 }
+
+.hud-element {
+  @apply bg-black/50 backdrop-blur-md border border-white/10 rounded-lg p-3 text-white;
+}
+
+@keyframes flash-hit {
+  0% { background-color: rgba(255, 0, 0, 0.3); }
+  100% { background-color: transparent; }
+}
+
+.hit-flash {
+  animation: flash-hit 0.2s ease-out;
+}
+
