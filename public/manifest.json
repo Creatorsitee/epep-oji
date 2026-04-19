@@ -13,19 +13,19 @@
       "short_name": "Main",
       "description": "Langsung masuk ke pertempuran",
       "url": "/?start=true",
-      "icons": [{ "src": "https://picsum.photos/seed/gun/192/192", "sizes": "192x192" }]
+      "icons": [{ "src": "https://cyzxfxkszavvotjjcsba.supabase.co/storage/v1/object/public/photos/uploads/1776568779516-oj5gt6.jpg", "sizes": "192x192", "type": "image/jpeg" }]
     }
   ],
   "icons": [
     {
-      "src": "https://picsum.photos/seed/freefire/192/192",
+      "src": "https://cyzxfxkszavvotjjcsba.supabase.co/storage/v1/object/public/photos/uploads/1776568779516-oj5gt6.jpg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/jpeg"
     },
     {
-      "src": "https://picsum.photos/seed/freefire/512/512",
+      "src": "https://cyzxfxkszavvotjjcsba.supabase.co/storage/v1/object/public/photos/uploads/1776568779516-oj5gt6.jpg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }

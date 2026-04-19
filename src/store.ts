@@ -356,6 +356,12 @@ export const useGameStore = create<GameStore>()(
     if (socket) {
       socket.disconnect();
     }
+    
+    // Explicitly release pointer lock when leaving
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+
     set({
       gameState: 'menu',
       socket: null,

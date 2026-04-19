@@ -61,8 +61,20 @@ function HUD() {
     return players.sort((a, b) => b.score - a.score);
   }, [score, otherPlayers]);
 
+  // Global escape key listener
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && gameState === 'playing') {
+        // If we are playing, just make sure menu options are visible if we were to show a pause menu
+        // For now, let's just make sure the user knows they can leave
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [gameState]);
+
   return (
-    <>
+    <div className="absolute inset-0 pointer-events-none z-50">
       {/* Crosshair */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center">
         <div className="relative flex items-center justify-center">
@@ -81,7 +93,7 @@ function HUD() {
       </div>
 
       {/* HUD Left - Score */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none z-50">
+      <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
         <div className="hud-element flex items-center gap-2">
           <div className="text-amber-500 font-black italic text-xl tracking-tighter">
             {score.toString().padStart(6, '0')}
@@ -91,20 +103,26 @@ function HUD() {
       </div>
       
       {/* HUD Right - Mission Control */}
-      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto z-50">
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
         <div className={`text-[9px] font-black px-2 py-0.5 rounded border ${socket ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors`}>
           {socket ? 'Multiplayer Online' : 'Solo Mode Offline'}
         </div>
         <button
-          onClick={leaveGame}
-          className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            leaveGame();
+          }}
+          className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all select-none cursor-pointer"
         >
           KELUAR GAME
         </button>
+        {!isMobile && (
+          <span className="text-[8px] text-zinc-600 uppercase font-bold tracking-tighter">Tekan ESC untuk kursor</span>
+        )}
       </div>
 
       {/* Player HP Bar and Ammo - Bottom Center */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none w-64 md:w-96 gap-1 z-50">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none w-64 md:w-96 gap-1">
         <div className="flex justify-between w-full px-1 items-end">
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-amber-500 italic uppercase">DEFLECTOR PLATING</span>
@@ -140,7 +158,7 @@ function HUD() {
 
       {/* Mobile Controls */}
       {isMobile && gameState === 'playing' && <MobileControls />}
-    </>
+    </div>
   );
 }
 
