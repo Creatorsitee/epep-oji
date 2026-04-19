@@ -21,6 +21,7 @@ export function Player() {
   
   const playerState = useGameStore(state => state.playerState);
   const gameState = useGameStore(state => state.gameState);
+  const isReloading = useGameStore(state => state.isReloading);
   const addLaser = useGameStore(state => state.addLaser);
   const hitEnemy = useGameStore(state => state.hitEnemy);
   const addParticles = useGameStore(state => state.addParticles);
@@ -324,7 +325,9 @@ export function Player() {
     const bobX = Math.cos(bobbing.current * 0.5) * 0.01;
     
     // Target posisi senjata (Base + Sway)
-    const targetBasePos = new THREE.Vector3(0.4 + bobX, -0.3 + bobY, -0.6);
+    // Animasi Reload: Jika sedang reload, geser senjata ke bawah
+    const reloadOffset = isReloading ? -0.4 : 0;
+    const targetBasePos = new THREE.Vector3(0.4 + bobX, -0.3 + bobY + reloadOffset, -0.6);
 
     if (gunGroupRef.current) {
       gunGroupRef.current.position.copy(camera.position);

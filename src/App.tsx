@@ -79,7 +79,7 @@ function HUD() {
       </div>
 
       {/* HUD Left - Score */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
+      <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none z-50">
         <div className="hud-element flex items-center gap-2">
           <div className="text-amber-500 font-black italic text-xl tracking-tighter">
             {score.toString().padStart(6, '0')}
@@ -89,7 +89,7 @@ function HUD() {
       </div>
       
       {/* HUD Right - Mission Control */}
-      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto z-50">
         <button
           onClick={leaveGame}
           className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all"
@@ -99,7 +99,7 @@ function HUD() {
       </div>
 
       {/* Player HP Bar and Ammo - Bottom Center */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none w-64 md:w-96 gap-1">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none w-64 md:w-96 gap-1 z-50">
         <div className="flex justify-between w-full px-1 items-end">
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-amber-500 italic uppercase">DEFLECTOR PLATING</span>
