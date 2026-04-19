@@ -8,7 +8,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, useRapier, CapsuleCollider } from '@react-three/rapier';
 import { PointerLockControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { useGameStore } from '../store';
+import { useGameStore, WEAPONS } from '../store';
 import { playSound } from '../utils/audio';
 
 const SPEED = 12;
@@ -22,9 +22,12 @@ export function Player() {
   const playerState = useGameStore(state => state.playerState);
   const gameState = useGameStore(state => state.gameState);
   const isReloading = useGameStore(state => state.isReloading);
+  const currentWeaponId = useGameStore(state => state.currentWeaponId);
   const addLaser = useGameStore(state => state.addLaser);
   const hitEnemy = useGameStore(state => state.hitEnemy);
   const addParticles = useGameStore(state => state.addParticles);
+
+  const currentWeapon = WEAPONS.find(w => w.id === currentWeaponId) || WEAPONS[0];
 
   const keys = useRef({ 
     w: false, a: false, s: false, d: false,
@@ -37,8 +40,6 @@ export function Player() {
   const gunGroupRef = useRef<THREE.Group>(null);
   const gunVisualRef = useRef<THREE.Group>(null);
   const gunBarrelRef = useRef<THREE.Group>(null);
-  const muzzleFlashRef = useRef<THREE.Mesh>(null);
-  const muzzleLightRef = useRef<THREE.PointLight>(null);
   const bobbing = useRef(0);
 
   // More robust mobile detection (checks for touch support)
@@ -94,9 +95,9 @@ export function Player() {
   const shoot = () => {
     if (gameState !== 'playing' || playerState !== 'active') return;
     
-    // Rate limit shooting
+    // Rate limit shooting based on weapon fireRate
     const now = Date.now();
-    if (now - lastShootTime.current < 200) return;
+    if (now - lastShootTime.current < 1000 * currentWeapon.fireRate) return;
 
     const { consumeAmmo, isReloading, reload } = useGameStore.getState();
     if (isReloading) return;
@@ -109,7 +110,7 @@ export function Player() {
     }
 
     lastShootTime.current = now;
-    playSound('shoot');
+    playSound('shoot', currentWeapon.soundPitch);
 
     // Raycast from camera
     const raycaster = new THREE.Raycaster();
@@ -128,15 +129,6 @@ export function Player() {
     }
     const startPos: [number, number, number] = [startPosVec.x, startPosVec.y, startPosVec.z];
     
-    if (muzzleFlashRef.current) {
-      muzzleFlashRef.current.visible = true;
-      muzzleFlashRef.current.scale.setScalar(1 + Math.random() * 0.5);
-      muzzleFlashRef.current.rotation.z = Math.random() * Math.PI;
-    }
-    if (muzzleLightRef.current) {
-      muzzleLightRef.current.intensity = 2;
-    }
-
     let endPos: [number, number, number];
 
     if (hit) {
@@ -170,7 +162,7 @@ export function Player() {
       ];
     }
 
-    addLaser(startPos, endPos, '#ffcc00');
+    addLaser(startPos, endPos, currentWeapon.laserColor);
   };
 
   useFrame((_, delta) => {
@@ -344,14 +336,6 @@ export function Player() {
       // Rotary smoothing
       gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 8);
     }
-    if (muzzleFlashRef.current && muzzleFlashRef.current.visible) {
-      if (Date.now() - lastShootTime.current > 50) {
-        muzzleFlashRef.current.visible = false;
-      }
-    }
-    if (muzzleLightRef.current && muzzleLightRef.current.intensity > 0) {
-      muzzleLightRef.current.intensity = THREE.MathUtils.lerp(muzzleLightRef.current.intensity, 0, delta * 20);
-    }
 
     // Emit position to server
     const now = Date.now();
@@ -389,11 +373,11 @@ export function Player() {
 
       {/* First Person Gun */}
       <group ref={gunGroupRef}>
-        <group ref={gunVisualRef} position={[0.4, -0.3, -0.6]}>
+        <group ref={gunVisualRef} position={[0.4, -0.3, -0.6]} scale={currentWeapon.modelScale}>
           {/* Main body: Rugged Steel */}
           <mesh position={[0, 0, 0.2]} castShadow>
             <boxGeometry args={[0.08, 0.18, 0.4]} />
-            <meshStandardMaterial color="#2d2d2d" metalness={0.9} roughness={0.3} />
+            <meshStandardMaterial color={currentWeapon.color} metalness={0.9} roughness={0.3} />
           </mesh>
           {/* Grip */}
           <mesh position={[0, -0.12, 0.28]} rotation={[-0.2, 0, 0]}>
@@ -403,7 +387,7 @@ export function Player() {
           {/* Rail/Top */}
           <mesh position={[0, 0.1, 0.2]}>
             <boxGeometry args={[0.06, 0.04, 0.35]} />
-            <meshStandardMaterial color="#222" metalness={1} roughness={0.1} />
+            <meshStandardMaterial color={currentWeapon.color} metalness={1} roughness={0.1} />
           </mesh>
           {/* Barrel: Industrial Heat-tinted steel */}
           <mesh position={[0, 0.05, -0.1]} rotation={[Math.PI / 2, 0, 0]}>
@@ -422,16 +406,10 @@ export function Player() {
           </mesh>
           <mesh position={[0.05, 0, 0.02]}>
             <sphereGeometry args={[0.012, 8, 8]} />
-            <meshStandardMaterial color="#ff3300" emissive="#ff0000" emissiveIntensity={2} />
+            <meshStandardMaterial color={currentWeapon.laserColor} emissive={currentWeapon.laserColor} emissiveIntensity={2} />
           </mesh>
-          {/* Barrel Tip Reference and Muzzle Flash */}
-          <group ref={gunBarrelRef} position={[0, 0.05, -0.35]}>
-            <mesh ref={muzzleFlashRef} visible={false} position={[0, 0, -0.1]} rotation={[Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[0.3, 0.3]} />
-              <meshBasicMaterial color="#ffcc00" transparent opacity={0.8} />
-            </mesh>
-            <pointLight ref={muzzleLightRef} color="#ffcc00" intensity={0} distance={5} decay={2} />
-          </group>
+          {/* Barrel Tip Reference */}
+          <group ref={gunBarrelRef} position={[0, 0.05, -0.35]} />
         </group>
       </group>
     </>

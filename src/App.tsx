@@ -4,10 +4,124 @@
 */
 
 import { useEffect, useState, useMemo } from 'react';
+import { useGameStore, WEAPONS } from './store';
 import { Game } from './components/Game';
 import { MobileControls } from './components/MobileControls';
-import { useGameStore } from './store';
 import { playSound } from './utils/audio';
+
+function StoreMenu({ onClose }: { onClose: () => void }) {
+  const coins = useGameStore(state => state.coins);
+  const ownedWeapons = useGameStore(state => state.ownedWeapons);
+  const currentWeaponId = useGameStore(state => state.currentWeaponId);
+  const buyWeapon = useGameStore(state => state.buyWeapon);
+  const selectWeapon = useGameStore(state => state.selectWeapon);
+
+  return (
+    <div className="absolute inset-0 bg-zinc-950/98 z-[100] flex flex-col items-center p-4 md:p-12 overflow-y-auto">
+      <div className="w-full max-w-4xl">
+        <div className="flex justify-between items-center mb-8 md:mb-12 border-b-2 border-amber-600/50 pb-4">
+          <h2 className="text-2xl md:text-4xl font-black italic text-white tracking-widest uppercase">GUDANG SENJATA</h2>
+          <div className="flex items-center gap-3">
+            <div className="bg-amber-600/20 border border-amber-600/50 px-2 md:px-4 py-1 flex items-center gap-2">
+              <span className="text-amber-500 font-black text-xs md:text-base">COIN: {coins}</span>
+            </div>
+            <button 
+              onClick={onClose}
+              className="px-4 md:px-6 py-1 bg-zinc-800 text-zinc-400 hover:text-white transition-colors font-black uppercase tracking-tighter text-xs md:text-sm"
+            >
+              KEMBALI
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-20">
+          {WEAPONS.map((weapon) => {
+            const isOwned = ownedWeapons.includes(weapon.id);
+            const isEquipped = currentWeaponId === weapon.id;
+            const canAfford = coins >= weapon.price;
+
+            return (
+              <div 
+                key={weapon.id} 
+                className={`relative group p-4 md:p-6 border-l-4 transition-all ${isEquipped ? 'bg-amber-600/10 border-amber-600' : 'bg-zinc-900/50 border-zinc-800'}`}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg md:text-xl font-black text-white italic">{weapon.name}</h3>
+                    <div className="flex gap-2 mt-1">
+                      <div className="w-3 h-3" style={{ backgroundColor: weapon.laserColor }} />
+                      <span className="text-[8px] md:text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Type-S Laser Gen-3</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {!isOwned && (
+                      <div className={`text-base md:text-lg font-black italic ${canAfford ? 'text-amber-500' : 'text-red-500'}`}>
+                        {weapon.price} <span className="text-[10px] uppercase">COINS</span>
+                      </div>
+                    )}
+                    {isEquipped && (
+                      <div className="text-amber-500 text-[8px] md:text-[10px] font-black uppercase border border-amber-500/50 px-2 py-0.5">ESTABLISHED</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-[8px] text-zinc-500 font-black tracking-widest uppercase">
+                      <span>DAMAGE</span>
+                      <span className="text-zinc-300">{weapon.damage}</span>
+                    </div>
+                    <div className="h-1 bg-zinc-800 w-full rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-500" style={{ width: `${(weapon.damage/100)*100}%` }} />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex justify-between text-[8px] text-zinc-500 font-black tracking-widest uppercase">
+                      <span>CAPACITY</span>
+                      <span className="text-zinc-300">{weapon.maxAmmo}</span>
+                    </div>
+                    <div className="h-1 bg-zinc-800 w-full rounded-full overflow-hidden">
+                      <div className="h-full bg-cyan-500" style={{ width: `${(weapon.maxAmmo/100)*100}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {isOwned ? (
+                  <button
+                    disabled={isEquipped}
+                    onClick={() => {
+                      selectWeapon(weapon.id);
+                      playSound('reload');
+                    }}
+                    className={`w-full py-2 md:py-3 font-black uppercase transition-all tracking-widest italic text-xs md:text-sm ${
+                      isEquipped 
+                        ? 'bg-amber-600 text-white cursor-default opacity-50' 
+                        : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+                    }`}
+                  >
+                    {isEquipped ? 'SEDANG DIGUNAKAN' : 'GUNAKAN SENJATA'}
+                  </button>
+                ) : (
+                  <button
+                    disabled={!canAfford}
+                    onClick={() => buyWeapon(weapon.id)}
+                    className={`w-full py-2 md:py-3 font-black uppercase transition-all tracking-widest italic text-xs md:text-sm ${
+                      canAfford 
+                        ? 'bg-amber-600 hover:bg-amber-500 text-white' 
+                        : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                    }`}
+                  >
+                    BELI SENJATA
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HUD() {
   const gameState = useGameStore(state => state.gameState);
@@ -27,6 +141,7 @@ function HUD() {
   const isTargetingBot = useGameStore(state => state.isTargetingBot);
   const personalBest = useGameStore(state => state.personalBest);
   const socket = useGameStore(state => state.socket);
+  const coins = useGameStore(state => state.coins);
   const isMobile = useIsMobile();
 
   // Pulse damage overlay based on last hit
@@ -104,8 +219,14 @@ function HUD() {
       
       {/* HUD Right - Mission Control */}
       <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto z-[9999]">
-        <div className={`text-[9px] font-black px-2 py-0.5 rounded border ${socket ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors bg-black/40`}>
-          {socket ? 'Multiplayer Online' : 'Solo Mode Offline'}
+        <div className="flex gap-2">
+          <div className="hud-element flex items-center gap-1 bg-amber-600/20 border-amber-600/50">
+            <span className="text-amber-500 font-black text-xs">C</span>
+            <span className="text-amber-500 font-bold text-[10px]">{coins.toLocaleString()}</span>
+          </div>
+          <div className={`text-[9px] font-black px-2 py-0.5 rounded border ${socket ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors bg-black/40`}>
+            {socket ? 'Multiplayer Online' : 'Solo Mode Offline'}
+          </div>
         </div>
         <button
           onClick={(e) => {
@@ -188,10 +309,14 @@ export default function App() {
   const gameState = useGameStore(state => state.gameState);
   const score = useGameStore(state => state.score);
   const personalBest = useGameStore(state => state.personalBest);
-  const startGame = useGameStore(state => state.startGame);
+  const coins = useGameStore(state => state.coins);
+  const socket = useGameStore(state => state.socket);
   const deferredPrompt = useGameStore(state => state.deferredPrompt);
   const setDeferredPrompt = useGameStore(state => state.setDeferredPrompt);
+  const startGame = useGameStore(state => state.startGame);
   const isMobile = useIsMobile();
+
+  const [showStore, setShowStore] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
@@ -278,25 +403,25 @@ export default function App() {
 
           {/* Menus */}
           {gameState === 'menu' && (
-            <div className="absolute inset-0 bg-zinc-950/90 flex flex-col items-center justify-center z-10 pointer-events-auto">
-              <div className="relative mb-12">
-                <h1 className="text-6xl md:text-9xl font-black text-white italic tracking-tighter drop-shadow-lg">
+            <div className="absolute inset-0 bg-zinc-950/90 flex flex-col items-center justify-start md:justify-center z-10 pointer-events-auto overflow-y-auto p-4 md:p-8 pt-8 md:pt-0">
+              <div className="relative mb-6 md:mb-12 mt-auto md:mt-0 shrink-0">
+                <h1 className="text-5xl md:text-9xl font-black text-white italic tracking-tighter drop-shadow-lg text-center leading-none">
                   FREE <span className="text-amber-500">FIRE</span>
                 </h1>
                 <div className="absolute -bottom-2 left-0 w-full h-1 bg-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
               </div>
               
-              <p className="text-zinc-500 mb-12 text-center px-4 max-w-lg uppercase tracking-[0.4em] text-[10px] font-black italic">
+              <p className="text-zinc-500 mb-6 md:mb-12 text-center px-4 max-w-lg uppercase tracking-[0.4em] text-[8px] md:text-[10px] font-black italic shrink-0">
                 BATTLE ROYALE ARENA<br/>
-                <span className="text-amber-500/50 mt-2 block">SURVIVAL OF THE FITTEST</span>
+                <span className="text-amber-500/50 mt-1 md:mt-2 block">SURVIVAL OF THE FITTEST</span>
                 {personalBest > 0 && (
-                  <span className="text-amber-600 mt-4 block text-xs border border-amber-600/30 py-1 px-3 bg-amber-600/5">
+                  <span className="text-amber-600 mt-2 md:mt-4 block text-[10px] md:text-xs border border-amber-600/30 py-1 md:px-3 bg-amber-600/5">
                     PERSONAL BEST :: {personalBest.toString().padStart(6, '0')}
                   </span>
                 )}
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-xl px-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full max-w-2xl md:px-8 pb-8 md:pb-0 mb-auto md:mb-0 shrink-0">
                 <button
                   onClick={() => {
                     if (isMobile && document.documentElement.requestFullscreen) {
@@ -304,54 +429,79 @@ export default function App() {
                     }
                     startGame();
                   }}
-                  className="group relative px-12 py-5 bg-amber-600 hover:bg-amber-500 transition-all active:scale-95 border-b-4 border-amber-800"
+                  className="group relative px-6 md:px-8 py-3 md:py-5 bg-amber-600 hover:bg-amber-500 transition-all active:scale-95 border-b-4 border-amber-800 flex items-center justify-center col-span-1 md:col-span-2"
                 >
-                  <div className="relative text-white text-xl font-black tracking-widest italic flex items-center justify-center gap-3">
+                  <div className="relative text-white text-lg md:text-xl font-black tracking-widest italic uppercase">
                     MULAI MISI
                   </div>
                 </button>
+
+                <button
+                  onClick={() => setShowStore(true)}
+                  className="group relative px-6 md:px-8 py-3 md:py-4 bg-zinc-800 hover:bg-zinc-700 transition-all active:scale-95 border-b-4 border-zinc-950 flex flex-col items-center justify-center"
+                >
+                  <div className="relative text-amber-500 text-xs md:text-sm font-black tracking-widest italic uppercase">
+                    TOKO SENJATA
+                  </div>
+                  <div className="text-[8px] md:text-[10px] text-zinc-500 uppercase font-black tracking-widest">{coins} COINS AVAIL</div>
+                </button>
+
                 {deferredPrompt ? (
                   <button
                     onClick={handleInstallClick}
-                    className="group relative px-8 py-5 bg-zinc-800 hover:bg-zinc-700 transition-all active:scale-95 border-b-4 border-zinc-950 flex flex-col items-center justify-center gap-1"
+                    className="group relative px-6 md:px-8 py-3 md:py-4 bg-zinc-800 hover:bg-zinc-700 transition-all active:scale-95 border-b-4 border-zinc-950 flex flex-col items-center justify-center gap-1"
                   >
-                    <div className="relative text-amber-500 text-sm font-black tracking-widest italic">
+                    <div className="relative text-amber-500 text-xs md:text-sm font-black tracking-widest italic uppercase">
                       INSTAL GAME
                     </div>
-                    <div className="text-[8px] text-zinc-500 uppercase font-black">Mainkan Offline</div>
+                    <div className="text-[6px] md:text-[8px] text-zinc-500 uppercase font-black">Mainkan Offline</div>
                   </button>
                 ) : (
-                  <div className="hidden md:flex flex-col justify-center text-[10px] text-zinc-600 font-bold uppercase tracking-widest border-l border-zinc-800 pl-4">
+                  <div className="flex flex-col justify-center text-[8px] text-zinc-600 font-bold uppercase tracking-widest border-l border-zinc-800 pl-4 py-2">
                     LATITUDE: 4.21S<br/>
                     LONGITUDE: 101.44E<br/>
                     STATUS: PERANG TOTAL
                   </div>
                 )}
               </div>
+              
+              {showStore && <StoreMenu onClose={() => setShowStore(false)} />}
             </div>
           )}
 
           {gameState === 'gameover' && (
-            <div className="absolute inset-0 bg-red-950/95 flex flex-col items-center justify-center z-10 pointer-events-auto">
-              <h1 className="text-7xl md:text-9xl font-black text-white mb-2 italic tracking-tighter">
-                MISI <span className="text-red-500 animate-pulse">GAGAL</span>
-              </h1>
-              <div className="h-1 w-64 bg-white/20 mb-12" />
+            <div className="absolute inset-0 bg-red-950/95 flex flex-col items-center justify-start md:justify-center z-10 pointer-events-auto p-4 overflow-y-auto pt-8 md:pt-0">
+              <div className="mt-auto md:mt-0 shrink-0 flex flex-col items-center">
+                <h1 className="text-5xl md:text-9xl font-black text-white mb-2 italic tracking-tighter text-center leading-none">
+                  MISI <span className="text-red-500 animate-pulse">GAGAL</span>
+                </h1>
+                <div className="h-1 w-48 md:w-64 bg-white/20 mb-6 md:mb-12" />
+              </div>
               
-              <div className="text-2xl text-amber-500 mb-12 font-black italic tracking-widest uppercase bg-black/40 px-12 py-3 border border-amber-600/30 flex flex-col items-center gap-1">
-                <span className="text-[10px] text-zinc-500">PANGKAT AKHIR</span>
+              <div className="text-xl md:text-2xl text-amber-500 mb-6 md:mb-12 font-black italic tracking-widest uppercase bg-black/40 px-8 md:px-12 py-2 md:py-3 border border-amber-600/30 flex flex-col items-center gap-1 shrink-0">
+                <span className="text-[8px] md:text-[10px] text-zinc-500">PANGKAT AKHIR</span>
                 <span>{score.toString().padStart(6, '0')}</span>
                 {score >= personalBest && score > 0 && (
-                  <span className="text-[8px] text-green-500 animate-bounce mt-1">NEW PERSONAL BEST!</span>
+                  <span className="text-[6px] md:text-[8px] text-green-500 animate-bounce mt-1">NEW PERSONAL BEST!</span>
                 )}
               </div>
               
-              <button
-                onClick={() => startGame()}
-                className="px-16 py-6 bg-white text-black text-2xl font-black italic tracking-tighter hover:bg-zinc-200 transition-all active:scale-95"
-              >
-                COBA LAGI
-              </button>
+              <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-auto md:mb-0 pb-8 md:pb-0 shrink-0 w-full max-w-sm md:max-w-none">
+                <button
+                  onClick={() => startGame()}
+                  className="w-full md:w-auto px-8 md:px-12 py-4 md:py-5 bg-white text-black text-lg md:text-xl font-black italic tracking-tighter hover:bg-zinc-200 transition-all active:scale-95 leading-none"
+                >
+                  COBA LAGI
+                </button>
+                <button
+                  onClick={() => setShowStore(true)}
+                  className="w-full md:w-auto px-8 md:px-12 py-4 md:py-5 bg-amber-600 text-white text-lg md:text-xl font-black italic tracking-tighter hover:bg-amber-500 transition-all active:scale-95 leading-none"
+                >
+                  TOKO SENJATA
+                </button>
+              </div>
+
+              {showStore && <StoreMenu onClose={() => setShowStore(false)} />}
             </div>
           )}
         </div>

@@ -54,6 +54,70 @@ export interface GameEvent {
   timestamp: number;
 }
 
+export interface Weapon {
+  id: string;
+  name: string;
+  price: number;
+  damage: number;
+  fireRate: number;
+  maxAmmo: number;
+  color: string;
+  laserColor: string;
+  soundPitch: number;
+  modelScale: [number, number, number];
+}
+
+export const WEAPONS: Weapon[] = [
+  { 
+    id: 'default', 
+    name: 'M4A1-GEN', 
+    price: 0, 
+    damage: 25, 
+    fireRate: 0.1, 
+    maxAmmo: 30, 
+    color: '#3f3f46', 
+    laserColor: '#f59e0b', 
+    soundPitch: 1,
+    modelScale: [1, 1, 1]
+  },
+  { 
+    id: 'plasma', 
+    name: 'PLASMA RIFLE', 
+    price: 50, 
+    damage: 35, 
+    fireRate: 0.15, 
+    maxAmmo: 25, 
+    color: '#0891b2', 
+    laserColor: '#22d3ee', 
+    soundPitch: 1.5,
+    modelScale: [1.2, 0.9, 1.1]
+  },
+  { 
+    id: 'heavy', 
+    name: 'HEAVY GATLING', 
+    price: 150, 
+    damage: 40, 
+    fireRate: 0.08, 
+    maxAmmo: 100, 
+    color: '#b91c1c', 
+    laserColor: '#ef4444', 
+    soundPitch: 0.7,
+    modelScale: [1.5, 1.2, 1.5]
+  },
+  { 
+    id: 'gold', 
+    name: 'GOLDEN VESTIGE', 
+    price: 500, 
+    damage: 100, 
+    fireRate: 0.12, 
+    maxAmmo: 50, 
+    color: '#fbbf24', 
+    laserColor: '#fcd34d', 
+    soundPitch: 1.2,
+    modelScale: [1.1, 1.1, 1.1]
+  }
+];
+
 interface GameStore {
   gameState: GameState;
   score: number;
@@ -72,6 +136,13 @@ interface GameStore {
   lasers: LaserData[];
   particles: ParticleData[];
   events: GameEvent[];
+  
+  // Economy & Store
+  coins: number;
+  ownedWeapons: string[];
+  currentWeaponId: string;
+  buyWeapon: (weaponId: string) => void;
+  selectWeapon: (weaponId: string) => void;
   
   // High Score & PWA
   personalBest: number;
@@ -152,6 +223,33 @@ export const useGameStore = create<GameStore>()(
       particles: [],
       events: [],
       
+      // Economy & Store
+      coins: 0,
+      ownedWeapons: ['default'],
+      currentWeaponId: 'default',
+      
+      buyWeapon: (weaponId) => {
+        const { coins, ownedWeapons } = get();
+        const weapon = WEAPONS.find(w => w.id === weaponId);
+        if (weapon && !ownedWeapons.includes(weaponId) && coins >= weapon.price) {
+          set({
+            coins: coins - weapon.price,
+            ownedWeapons: [...ownedWeapons, weaponId],
+            currentWeaponId: weaponId
+          });
+          get().addEvent(`DBELİ: ${weapon.name}`);
+          playSound('victory'); // Reuse sound for success
+        }
+      },
+      
+      selectWeapon: (weaponId) => {
+        const { ownedWeapons } = get();
+        if (ownedWeapons.includes(weaponId)) {
+          set({ currentWeaponId: weaponId });
+          get().addEvent(`DIPILIH: ${weaponId.toUpperCase()}`);
+        }
+      },
+
       // PWA & Personal Best
       personalBest: 0,
       deferredPrompt: null,
@@ -185,6 +283,8 @@ export const useGameStore = create<GameStore>()(
     }
 
     // Reset base state first for immediate UI response
+    const currentWeapon = WEAPONS.find(w => w.id === get().currentWeaponId) || WEAPONS[0];
+    
     set({
       gameState: 'playing',
       score: 0,
@@ -195,7 +295,8 @@ export const useGameStore = create<GameStore>()(
       maxPlayerHp: 100,
       lastDamageTime: 0,
       lastHitMarkerTime: 0,
-      ammo: 30,
+      ammo: currentWeapon.maxAmmo,
+      maxAmmo: currentWeapon.maxAmmo,
       isReloading: false,
       enemies: INITIAL_ENEMIES.map(e => ({ ...e, state: 'active', disabledUntil: 0 })),
       lasers: [],
@@ -235,9 +336,18 @@ export const useGameStore = create<GameStore>()(
 
       newSocket.on('gameJoined', (players: Record<string, PlayerData>) => {
         const otherPlayers = { ...players };
+        const currentWeapon = WEAPONS.find(w => w.id === get().currentWeaponId) || WEAPONS[0];
+
         if (newSocket?.id) delete otherPlayers[newSocket.id];
         set({ 
-          otherPlayers
+          otherPlayers,
+          gameState: 'playing',
+          timeLeft: 300,
+          score: 0,
+          ammo: currentWeapon.maxAmmo,
+          maxAmmo: currentWeapon.maxAmmo,
+          isReloading: false,
+          enemies: INITIAL_ENEMIES.map(e => ({ ...e, state: 'active', disabledUntil: 0 }))
         });
         get().addEvent("TERHUBUNG KE SERVER");
       });
@@ -421,9 +531,11 @@ export const useGameStore = create<GameStore>()(
     }
 
     let enemyWasKilled = false;
+    const currentWeapon = WEAPONS.find(w => w.id === state.currentWeaponId) || WEAPONS[0];
+
     const enemies = state.enemies.map(e => {
       if (e.id === id && e.state === 'active') {
-        const newHp = Math.max(0, e.hp - 25);
+        const newHp = Math.max(0, e.hp - currentWeapon.damage);
         if (newHp === 0) {
           enemyWasKilled = true;
           playSound('zombie'); // Suara kematian bot (zombie style)
@@ -443,8 +555,9 @@ export const useGameStore = create<GameStore>()(
       enemies,
       lastHitMarkerTime: byPlayer ? Date.now() : state.lastHitMarkerTime,
       score: byPlayer && enemyWasKilled ? state.score + 100 : state.score,
+      coins: byPlayer && enemyWasKilled ? state.coins + 5 : state.coins,
       events: byPlayer && enemyWasKilled 
-        ? [...state.events, { id: Math.random().toString(), message: `You eliminated ${id}`, timestamp: Date.now() }] 
+        ? [...state.events, { id: Math.random().toString(), message: `You eliminated ${id} (+5 COINS)`, timestamp: Date.now() }] 
         : state.events
     };
   }),
@@ -464,13 +577,16 @@ export const useGameStore = create<GameStore>()(
   })),
 
   reload: () => set((state) => {
-    if (state.ammo === state.maxAmmo || state.isReloading || state.playerState !== 'active') return state;
+    const currentWeapon = WEAPONS.find(w => w.id === state.currentWeaponId) || WEAPONS[0];
+    if (state.ammo === currentWeapon.maxAmmo || state.isReloading || state.playerState !== 'active') return state;
     
     playSound('reload');
 
     // Simulate async 1.5s reload
     setTimeout(() => {
-      useGameStore.setState({ ammo: useGameStore.getState().maxAmmo, isReloading: false });
+      const { currentWeaponId } = useGameStore.getState();
+      const gun = WEAPONS.find(w => w.id === currentWeaponId) || WEAPONS[0];
+      useGameStore.setState({ ammo: gun.maxAmmo, isReloading: false });
     }, 1500);
 
     return { isReloading: true };
@@ -557,7 +673,12 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'free-fire-storage',
-      partialize: (state) => ({ personalBest: state.personalBest }),
+      partialize: (state) => ({ 
+        personalBest: state.personalBest,
+        coins: state.coins,
+        ownedWeapons: state.ownedWeapons,
+        currentWeaponId: state.currentWeaponId
+      }),
     }
   )
 );

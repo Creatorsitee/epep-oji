@@ -11,7 +11,7 @@ const createNoiseBuffer = (ctx: AudioContext) => {
   return buffer;
 };
 
-export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' | 'zombie' | 'gameover' | 'victory' | 'step' | 'enemyShoot') => {
+export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' | 'zombie' | 'gameover' | 'victory' | 'step' | 'enemyShoot', pitch = 1) => {
   if (typeof window === 'undefined') return;
 
   if (!audioCtx) {
@@ -37,8 +37,8 @@ export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' |
     noise.buffer = noiseBuffer;
     
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1500, t);
-    filter.frequency.exponentialRampToValueAtTime(400, t + 0.1);
+    filter.frequency.setValueAtTime(1500 * pitch, t);
+    filter.frequency.exponentialRampToValueAtTime(400 * pitch, t + 0.1);
     
     gain.gain.setValueAtTime(type === 'shoot' ? 0.6 : 0.2, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
@@ -54,8 +54,8 @@ export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' |
     const osc = audioCtx.createOscillator();
     const oscGain = audioCtx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(120, t);
-    osc.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+    osc.frequency.setValueAtTime(120 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(40 * pitch, t + 0.08);
     oscGain.gain.setValueAtTime(0.4, t);
     oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     osc.connect(oscGain);
