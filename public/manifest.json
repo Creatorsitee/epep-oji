@@ -7,6 +7,15 @@
   "background_color": "#0a0a0c",
   "theme_color": "#f59e0b",
   "orientation": "landscape",
+  "shortcuts": [
+    {
+      "name": "Mulai Misi",
+      "short_name": "Main",
+      "description": "Langsung masuk ke pertempuran",
+      "url": "/?start=true",
+      "icons": [{ "src": "https://picsum.photos/seed/gun/192/192", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "https://picsum.photos/seed/freefire/192/192",

@@ -25,6 +25,8 @@ function HUD() {
   const maxAmmo = useGameStore(state => state.maxAmmo);
   const isReloading = useGameStore(state => state.isReloading);
   const isTargetingBot = useGameStore(state => state.isTargetingBot);
+  const personalBest = useGameStore(state => state.personalBest);
+  const socket = useGameStore(state => state.socket);
   const isMobile = useIsMobile();
 
   // Pulse damage overlay based on last hit
@@ -90,6 +92,9 @@ function HUD() {
       
       {/* HUD Right - Mission Control */}
       <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto z-50">
+        <div className={`text-[9px] font-black px-2 py-0.5 rounded border ${socket ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors`}>
+          {socket ? 'Multiplayer Online' : 'Solo Mode Offline'}
+        </div>
         <button
           onClick={leaveGame}
           className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all"
@@ -162,8 +167,38 @@ function useIsMobile() {
 export default function App() {
   const gameState = useGameStore(state => state.gameState);
   const score = useGameStore(state => state.score);
+  const personalBest = useGameStore(state => state.personalBest);
   const startGame = useGameStore(state => state.startGame);
+  const deferredPrompt = useGameStore(state => state.deferredPrompt);
+  const setDeferredPrompt = useGameStore(state => state.setDeferredPrompt);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, [setDeferredPrompt]);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('start') === 'true' && gameState === 'menu') {
+      startGame();
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [gameState, startGame]);
 
   useEffect(() => {
     const handleGesture = () => {
@@ -234,6 +269,11 @@ export default function App() {
               <p className="text-zinc-500 mb-12 text-center px-4 max-w-lg uppercase tracking-[0.4em] text-[10px] font-black italic">
                 BATTLE ROYALE ARENA<br/>
                 <span className="text-amber-500/50 mt-2 block">SURVIVAL OF THE FITTEST</span>
+                {personalBest > 0 && (
+                  <span className="text-amber-600 mt-4 block text-xs border border-amber-600/30 py-1 px-3 bg-amber-600/5">
+                    PERSONAL BEST :: {personalBest.toString().padStart(6, '0')}
+                  </span>
+                )}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-xl px-8">
@@ -250,11 +290,23 @@ export default function App() {
                     MULAI MISI
                   </div>
                 </button>
-                <div className="hidden md:flex flex-col justify-center text-[10px] text-zinc-600 font-bold uppercase tracking-widest border-l border-zinc-800 pl-4">
-                  LATITUDE: 4.21S<br/>
-                  LONGITUDE: 101.44E<br/>
-                  STATUS: PERANG TOTAL
-                </div>
+                {deferredPrompt ? (
+                  <button
+                    onClick={handleInstallClick}
+                    className="group relative px-8 py-5 bg-zinc-800 hover:bg-zinc-700 transition-all active:scale-95 border-b-4 border-zinc-950 flex flex-col items-center justify-center gap-1"
+                  >
+                    <div className="relative text-amber-500 text-sm font-black tracking-widest italic">
+                      INSTAL GAME
+                    </div>
+                    <div className="text-[8px] text-zinc-500 uppercase font-black">Mainkan Offline</div>
+                  </button>
+                ) : (
+                  <div className="hidden md:flex flex-col justify-center text-[10px] text-zinc-600 font-bold uppercase tracking-widest border-l border-zinc-800 pl-4">
+                    LATITUDE: 4.21S<br/>
+                    LONGITUDE: 101.44E<br/>
+                    STATUS: PERANG TOTAL
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -266,8 +318,12 @@ export default function App() {
               </h1>
               <div className="h-1 w-64 bg-white/20 mb-12" />
               
-              <div className="text-2xl text-amber-500 mb-12 font-black italic tracking-widest uppercase bg-black/40 px-12 py-3 border border-amber-600/30">
-                PANGKAT AKHIR :: {score.toString().padStart(6, '0')}
+              <div className="text-2xl text-amber-500 mb-12 font-black italic tracking-widest uppercase bg-black/40 px-12 py-3 border border-amber-600/30 flex flex-col items-center gap-1">
+                <span className="text-[10px] text-zinc-500">PANGKAT AKHIR</span>
+                <span>{score.toString().padStart(6, '0')}</span>
+                {score >= personalBest && score > 0 && (
+                  <span className="text-[8px] text-green-500 animate-bounce mt-1">NEW PERSONAL BEST!</span>
+                )}
               </div>
               
               <button

@@ -4,6 +4,7 @@
 */
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import * as THREE from 'three';
 import { io, Socket } from 'socket.io-client';
 
@@ -72,6 +73,12 @@ interface GameStore {
   particles: ParticleData[];
   events: GameEvent[];
   
+  // High Score & PWA
+  personalBest: number;
+  deferredPrompt: any;
+  setDeferredPrompt: (prompt: any) => void;
+  updatePersonalBest: () => void;
+  
   // Multiplayer
   socket: Socket | null;
   otherPlayers: Record<string, PlayerData>;
@@ -124,27 +131,40 @@ const INITIAL_ENEMIES: EnemyData[] = [
   { id: 'bot-10', position: [-70, 1, -30], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
 ];
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  gameState: 'menu',
-  score: 0,
-  timeLeft: 300, // 5 minutes
-  playerState: 'active',
-  playerDisabledUntil: 0,
-  playerHp: 100,
-  maxPlayerHp: 100,
-  lastDamageTime: 0,
-  lastHitMarkerTime: 0,
-  ammo: 30,
-  maxAmmo: 30,
-  isReloading: false,
-  isTargetingBot: false,
-  enemies: [],
-  lasers: [],
-  particles: [],
-  events: [],
-  
-  socket: null,
-  otherPlayers: {},
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set, get) => ({
+      gameState: 'menu',
+      score: 0,
+      timeLeft: 300, // 5 minutes
+      playerState: 'active',
+      playerDisabledUntil: 0,
+      playerHp: 100,
+      maxPlayerHp: 100,
+      lastDamageTime: 0,
+      lastHitMarkerTime: 0,
+      ammo: 30,
+      maxAmmo: 30,
+      isReloading: false,
+      isTargetingBot: false,
+      enemies: [],
+      lasers: [],
+      particles: [],
+      events: [],
+      
+      // PWA & Personal Best
+      personalBest: 0,
+      deferredPrompt: null,
+      setDeferredPrompt: (prompt) => set({ deferredPrompt: prompt }),
+      updatePersonalBest: () => {
+        const { score, personalBest } = get();
+        if (score > personalBest) {
+          set({ personalBest: score });
+        }
+      },
+      
+      socket: null,
+      otherPlayers: {},
 
   mobileInput: {
     move: { x: 0, y: 0 },
@@ -164,33 +184,63 @@ export const useGameStore = create<GameStore>((set, get) => ({
       socket.disconnect();
     }
 
-    let newSocket: Socket | null = null;
+    // Reset base state first for immediate UI response
+    set({
+      gameState: 'playing',
+      score: 0,
+      timeLeft: 300,
+      playerState: 'active',
+      playerDisabledUntil: 0,
+      playerHp: 100,
+      maxPlayerHp: 100,
+      lastDamageTime: 0,
+      lastHitMarkerTime: 0,
+      ammo: 30,
+      isReloading: false,
+      enemies: INITIAL_ENEMIES.map(e => ({ ...e, state: 'active', disabledUntil: 0 })),
+      lasers: [],
+      particles: [],
+      events: [],
+      socket: null,
+      otherPlayers: {},
+    });
+
+    // Cek koneksi internet
+    const isOffline = !navigator.onLine;
+
+    if (isOffline) {
+      get().addEvent("MODE SOLO: BERMAIN OFFLINE");
+      return;
+    }
 
     // Initialize multiplayer
-    newSocket = io(window.location.origin);
-    
-    newSocket.on('connect', () => {
-      newSocket!.emit('joinGame');
-    });
-
-    newSocket.on('gameError', (msg: string) => {
-      alert(msg);
-      get().leaveGame();
-    });
-
-    newSocket.on('gameJoined', (players: Record<string, PlayerData>) => {
-      const otherPlayers = { ...players };
-      delete otherPlayers[newSocket!.id!];
-      set({ 
-        otherPlayers,
-        gameState: 'playing',
-        timeLeft: 300,
-        score: 0,
-        ammo: 30,
-        isReloading: false,
-        enemies: INITIAL_ENEMIES.map(e => ({ ...e, state: 'active', disabledUntil: 0 }))
+    let newSocket: Socket | null = null;
+    try {
+      newSocket = io(window.location.origin, {
+        timeout: 5000,
+        reconnectionAttempts: 2
       });
-    });
+      
+      newSocket.on('connect_error', () => {
+        if (!get().socket) { // Only log if we haven't successfully connected
+          console.warn("Socket connection failed. Staying in solo mode...");
+          get().addEvent("KONEKSI GAGAL: MODE SOLO");
+        }
+      });
+
+      newSocket.on('connect', () => {
+        newSocket!.emit('joinGame');
+        set({ socket: newSocket });
+      });
+
+      newSocket.on('gameJoined', (players: Record<string, PlayerData>) => {
+        const otherPlayers = { ...players };
+        if (newSocket?.id) delete otherPlayers[newSocket.id];
+        set({ 
+          otherPlayers
+        });
+        get().addEvent("TERHUBUNG KE SERVER");
+      });
 
       newSocket.on('playerJoined', (player: PlayerData) => {
         set(state => ({
@@ -286,25 +336,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
           };
         });
       });
-    set({
-      gameState: 'playing',
-      score: 0,
-      timeLeft: 300,
-      playerState: 'active',
-      playerDisabledUntil: 0,
-      playerHp: 100,
-      maxPlayerHp: 100,
-      lastDamageTime: 0,
-      lastHitMarkerTime: 0,
-      ammo: 30,
-      isReloading: false,
-      enemies: INITIAL_ENEMIES.map(e => ({ ...e, state: 'active', disabledUntil: 0 })),
-      lasers: [],
-      particles: [],
-      events: [],
-      socket: newSocket,
-      otherPlayers: {},
-    });
+    } catch (e) {
+      console.warn("Socket initialization error:", e);
+      get().addEvent("ERROR KONEKSI: MODE SOLO");
+    }
   },
 
   endGame: () => {
@@ -313,6 +348,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       socket.disconnect();
     }
     set({ gameState: 'gameover', socket: null });
+    get().updatePersonalBest();
   },
 
   leaveGame: () => {
@@ -511,4 +547,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
   setTargetingBot: (isTargeting) => set({ isTargetingBot: isTargeting })
-}));
+    }),
+    {
+      name: 'free-fire-storage',
+      partialize: (state) => ({ personalBest: state.personalBest }),
+    }
+  )
+);
