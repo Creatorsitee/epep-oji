@@ -336,12 +336,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   updateTime: (delta) => set((state) => {
     if (state.gameState !== 'playing') return state;
-    const newTime = state.timeLeft - delta;
-    if (newTime <= 0) {
-      if (state.socket) state.socket.disconnect();
-      return { timeLeft: 0, gameState: 'gameover', socket: null };
-    }
-    return { timeLeft: newTime };
+    return { timeLeft: state.timeLeft + delta }; // Count up or just ignore
   }),
 
   hitPlayer: () => set((state) => {

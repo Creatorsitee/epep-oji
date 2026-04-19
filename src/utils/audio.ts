@@ -1,6 +1,10 @@
-const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+let audioCtx: AudioContext | null = null;
 
 export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' | 'zombie' | 'gameover' | 'victory' | 'step' | 'enemyShoot') => {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
@@ -13,27 +17,27 @@ export const playSound = (type: 'shoot' | 'hit' | 'damage' | 'reload' | 'jump' |
   gain.connect(audioCtx.destination);
 
   if (type === 'shoot') {
-    // Punchy noise-like burst for a gunshot
+    // Sharp punchy burst
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(150, t);
-    osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.linearRampToValueAtTime(40, t + 0.08);
     
-    gain.gain.setValueAtTime(0.3, t);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     
     osc.start(t);
-    osc.stop(t + 0.1);
+    osc.stop(t + 0.08);
   } else if (type === 'step') {
-    // Soft low thud for footstep
+    // Short crisp thud
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(60, t);
-    osc.frequency.exponentialRampToValueAtTime(40, t + 0.05);
+    osc.frequency.setValueAtTime(80, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.03);
     
-    gain.gain.setValueAtTime(0.1, t);
-    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
     
     osc.start(t);
-    osc.stop(t + 0.05);
+    osc.stop(t + 0.03);
   } else if (type === 'enemyShoot') {
     // Slightly different shoot sound for enemies
     osc.type = 'square';

@@ -15,11 +15,7 @@ function HUD() {
   const timeLeft = useGameStore(state => state.timeLeft);
   const playerState = useGameStore(state => state.playerState);
   const otherPlayers = useGameStore(state => state.otherPlayers);
-  const enemies = useGameStore(state => state.enemies);
   const events = useGameStore(state => state.events);
-  const activeBots = enemies.filter(e => e.state === 'active').length;
-  const playerCount = Object.keys(otherPlayers).length + 1;
-  const totalSquad = playerCount + activeBots;
   const leaveGame = useGameStore(state => state.leaveGame);
   const playerHp = useGameStore(state => state.playerHp);
   const maxPlayerHp = useGameStore(state => state.maxPlayerHp);
@@ -93,33 +89,14 @@ function HUD() {
         </div>
       </div>
       
-      {/* HUD Right - Time & Mission */}
+      {/* HUD Right - Mission Control */}
       <div className="absolute top-4 right-4 flex flex-col items-end gap-2 pointer-events-auto">
-        {gameState === 'playing' && (
-          <div className="hud-element text-amber-500 text-lg font-black italic tracking-widest">
-            {Math.floor(timeLeft / 60)}:{(Math.floor(timeLeft) % 60).toString().padStart(2, '0')}
-          </div>
-        )}
         <button
           onClick={leaveGame}
           className="hud-element text-[10px] font-black uppercase hover:text-red-500 hover:border-red-500 transition-all"
         >
-          BATALKAN MISI
+          KELUAR GAME
         </button>
-      </div>
-
-      {/* HUD Info Center - Unit Tracking */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
-        <div className="flex gap-4">
-          <div className="hud-element text-[10px] font-bold flex flex-col items-center min-w-[80px]">
-            <span className="text-zinc-500 uppercase tracking-widest">SQUAD</span>
-            <span className="text-amber-500 text-lg italic">{playerCount}</span>
-          </div>
-          <div className="hud-element text-[10px] font-bold flex flex-col items-center min-w-[80px]">
-            <span className="text-zinc-500 uppercase tracking-widest">BATTLE BOTS</span>
-            <span className="text-amber-500 text-lg italic">{activeBots}</span>
-          </div>
-        </div>
       </div>
 
       {/* Player HP Bar and Ammo - Bottom Center */}
@@ -189,6 +166,20 @@ export default function App() {
   const startGame = useGameStore(state => state.startGame);
   const isMobile = useIsMobile();
 
+  useEffect(() => {
+    const handleGesture = () => {
+      playSound('hit'); // Dummy sound to trigger context
+      window.removeEventListener('click', handleGesture);
+      window.removeEventListener('touchstart', handleGesture);
+    };
+    window.addEventListener('click', handleGesture);
+    window.addEventListener('touchstart', handleGesture);
+    return () => {
+      window.removeEventListener('click', handleGesture);
+      window.removeEventListener('touchstart', handleGesture);
+    };
+  }, []);
+
   return (
     <div className="w-screen h-screen bg-[#0a0a0c] relative overflow-hidden font-mono select-none flex items-center justify-center">
       {/* Dynamic Grid Background */}
@@ -236,14 +227,14 @@ export default function App() {
             <div className="absolute inset-0 bg-zinc-950/90 flex flex-col items-center justify-center z-10 pointer-events-auto">
               <div className="relative mb-12">
                 <h1 className="text-6xl md:text-9xl font-black text-white italic tracking-tighter drop-shadow-lg">
-                  IRON <span className="text-amber-500">FRONT</span>
+                  FREE <span className="text-amber-500">FIRE</span>
                 </h1>
                 <div className="absolute -bottom-2 left-0 w-full h-1 bg-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
               </div>
               
               <p className="text-zinc-500 mb-12 text-center px-4 max-w-lg uppercase tracking-[0.4em] text-[10px] font-black italic">
-                SQUADRON COMMANDER // SECTOR 07<br/>
-                <span className="text-amber-500/50 mt-2 block">ELIMINASI SEMUA ANCAMAN MEKANIK</span>
+                BATTLE ROYALE ARENA<br/>
+                <span className="text-amber-500/50 mt-2 block">SURVIVAL OF THE FITTEST</span>
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-xl px-8">
