@@ -25,6 +25,7 @@ function HUD() {
   const ammo = useGameStore(state => state.ammo);
   const maxAmmo = useGameStore(state => state.maxAmmo);
   const isReloading = useGameStore(state => state.isReloading);
+  const isTargetingBot = useGameStore(state => state.isTargetingBot);
   const isMobile = useIsMobile();
 
   // Pulse damage overlay based on last hit
@@ -65,8 +66,8 @@ function HUD() {
       {/* Crosshair */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center">
         <div className="relative flex items-center justify-center">
-          <div className={`w-6 h-6 border-2 ${playerState === 'disabled' ? 'border-red-600' : 'border-amber-500/50'}`} />
-          <div className={`absolute w-1 h-1 rounded-full ${playerState === 'disabled' ? 'bg-red-600' : 'bg-amber-400'}`} />
+          <div className={`w-6 h-6 border-2 ${playerState === 'disabled' ? 'border-red-600' : isTargetingBot ? 'border-red-500' : 'border-amber-500/50'}`} />
+          <div className={`absolute w-1 h-1 rounded-full ${playerState === 'disabled' ? 'bg-red-600' : isTargetingBot ? 'bg-red-500' : 'bg-amber-400'}`} />
           {/* Hitmarker element */}
           {showHitMarker && (
             <div className="absolute w-8 h-8 flex items-center justify-center opacity-80" style={{ transform: 'rotate(45deg)' }}>

@@ -117,6 +117,20 @@ export function Player() {
     const rayStart = camera.position.clone().add(raycaster.ray.direction.clone().multiplyScalar(0.8));
     const ray = new rapier.Ray(rayStart, raycaster.ray.direction);
     const hit = world.castRay(ray, MAX_LASER_DIST, true);
+    
+    // Check if hitting bot for crosshair feedback
+    let isTargeting = false;
+    if (hit) {
+      const collider = hit.collider;
+      const rb = collider.parent();
+      if (rb && rb.userData) {
+        const userData = rb.userData as { name?: string };
+        if (userData.name?.startsWith('bot-')) {
+          isTargeting = true;
+        }
+      }
+    }
+    useGameStore.getState().setTargetingBot(isTargeting);
 
     const startPosVec = new THREE.Vector3();
     if (gunBarrelRef.current) {

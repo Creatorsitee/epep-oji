@@ -66,6 +66,7 @@ interface GameStore {
   ammo: number;
   maxAmmo: number;
   isReloading: boolean;
+  isTargetingBot: boolean;
   enemies: EnemyData[];
   lasers: LaserData[];
   particles: ParticleData[];
@@ -91,6 +92,7 @@ interface GameStore {
   
   // Multiplayer actions
   updatePlayerPosition: (position: [number, number, number], rotation: number) => void;
+  setTargetingBot: (isTargeting: boolean) => void;
   reload: () => void;
   consumeAmmo: () => boolean;
 
@@ -135,6 +137,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ammo: 30,
   maxAmmo: 30,
   isReloading: false,
+  isTargetingBot: false,
   enemies: [],
   lasers: [],
   particles: [],
@@ -286,7 +289,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       gameState: 'playing',
       score: 0,
-      timeLeft: 120,
+      timeLeft: 300,
       playerState: 'active',
       playerDisabledUntil: 0,
       playerHp: 100,
@@ -348,8 +351,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newHp = Math.max(0, state.playerHp - damage);
     
     if (newHp <= 0) {
+      playSound('gameover');
       return {
         playerHp: 0,
+        gameState: 'gameover',
         playerState: 'disabled',
         playerDisabledUntil: Date.now() + 5000,
         score: Math.max(0, state.score - 50),
@@ -508,5 +513,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (socket) {
       socket.emit('updatePosition', { position, rotation });
     }
-  }
+  },
+  setTargetingBot: (isTargeting) => set({ isTargetingBot: isTargeting })
 }));
