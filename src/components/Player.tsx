@@ -305,13 +305,19 @@ export function Player() {
       // Weapon sway based on movement
       const bobY = Math.sin(bobbing.current) * 0.015;
       const bobX = Math.cos(bobbing.current * 0.5) * 0.01;
-      gunGroupRef.current.position.y += bobY;
-      gunGroupRef.current.position.x += bobX;
+      
+      // Apply sway locally to the visual child 
+      if(gunVisualRef.current) {
+        gunVisualRef.current.position.set(0.4 + bobX, -0.3 + bobY, -0.6);
+      }
     }
     
     // Recover recoil and muzzle flash
     if (gunVisualRef.current) {
-      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, -0.6, delta * 15);
+      // Recoil recovery for the gunVisualRef local Z-offset
+      // Reset position to base local [0.4, -0.3, -0.6] + sway
+      const baseZ = -0.6;
+      gunVisualRef.current.position.z = THREE.MathUtils.lerp(gunVisualRef.current.position.z, baseZ, delta * 15);
       gunVisualRef.current.rotation.x = THREE.MathUtils.lerp(gunVisualRef.current.rotation.x, 0, delta * 15);
     }
     if (muzzleFlashRef.current && muzzleFlashRef.current.visible) {

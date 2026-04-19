@@ -194,25 +194,21 @@ export function Enemy({ data }: { data: EnemyData }) {
     }
   });
 
-  // Tentukan variasi drone berdasarkan ID (e.g., bot-1)
-  const droneVariation = useMemo(() => {
+  const charVariation = useMemo(() => {
     const idNum = parseInt(data.id.split('-')[1] || '0');
-    // Variasi bentuk: 0:Box, 1:Cylinder, 2:Sphere, 3:Pyramid
-    const shape = idNum % 4;
-    // Variasi warna:
-    const baseColors = ['#d1d1d1', '#a0c0e0', '#e0c0a0', '#c0e0a0'];
-    const accentColors = ['#ff4400', '#00ffcc', '#ff00ff', '#ffff00'];
+    // Zombie if divisible by 5, else crewmate
+    const type = idNum % 5 === 0 ? 'zombie' : 'crewmate';
+    const colors = ['#C51111', '#132ED2', '#117F2D', '#ED54BA', '#EF7D0D', '#F5F557', '#3F474E', '#71491E', '#50EF39', '#7E30C8'];
+    const zombieColors = ['#4A704A', '#556B2F', '#3B4A3B'];
     
     return {
-      shape,
-      color: baseColors[idNum % baseColors.length],
-      accent: accentColors[idNum % accentColors.length]
+      type,
+      color: type === 'zombie' ? zombieColors[idNum % zombieColors.length] : colors[idNum % colors.length],
+      visorColor: '#96E0F4'
     };
   }, [data.id]);
 
-  const color = data.state === 'disabled' ? '#222' : droneVariation.color;
-  const accentColor = data.state === 'disabled' ? '#111' : droneVariation.accent;
-  const glowColor = data.state === 'disabled' ? '#000' : droneVariation.accent;
+  const color = data.state === 'disabled' ? '#222' : charVariation.color;
 
   return (
     <RigidBody
@@ -226,38 +222,46 @@ export function Enemy({ data }: { data: EnemyData }) {
     >
       <CapsuleCollider args={[0.5, 0.5]} position={[0, 1, 0]} />
       <group ref={groupRef} position={[0, 0, 0]}>
-        {/* Drone Main Body based on shape */}
-        <mesh castShadow position={[0, 1.2, 0]}>
-          {droneVariation.shape === 0 && <boxGeometry args={[0.8, 0.6, 0.8]} />}
-          {droneVariation.shape === 1 && <cylinderGeometry args={[0.4, 0.4, 0.6, 16]} />}
-          {droneVariation.shape === 2 && <sphereGeometry args={[0.4, 16, 16]} />}
-          {droneVariation.shape === 3 && <coneGeometry args={[0.4, 0.8, 4]} />}
-          <meshStandardMaterial color={color} roughness={0.3} metalness={0.8} />
+        {/* Character Body */}
+        <mesh castShadow position={[0, 1.0, 0]}>
+          <capsuleGeometry args={[0.5, charVariation.type === 'zombie' ? 1.0 : 0.8, 4, 8]} />
+          <meshStandardMaterial color={color} roughness={charVariation.type === 'zombie' ? 0.8 : 0.3} metalness={charVariation.type === 'zombie' ? 0.1 : 0.2} />
         </mesh>
         
-        {/* Drone Core/Eye with pulse */}
-        <mesh position={[0, 1.2, 0.41]}>
-          <cylinderGeometry args={[0.15, 0.15, 0.1]} />
-          <meshStandardMaterial color={accentColor} emissive={glowColor} emissiveIntensity={5} />
+        {/* Visor / Eyes */}
+        {charVariation.type === 'crewmate' ? (
+          <mesh position={[0.4, 1.2, 0]}>
+            <capsuleGeometry args={[0.2, 0.4, 4, 8]} />
+            <meshStandardMaterial color={charVariation.visorColor} roughness={0.1} metalness={0.9} />
+          </mesh>
+        ) : (
+          /* Zombie Eyes */
+          <>
+            <mesh position={[0.3, 1.3, 0.25]}>
+              <sphereGeometry args={[0.1, 8, 8]} />
+              <meshBasicMaterial color="#ff0000" />
+            </mesh>
+            <mesh position={[0.3, 1.3, -0.25]}>
+              <sphereGeometry args={[0.1, 8, 8]} />
+              <meshBasicMaterial color="#ff0000" />
+            </mesh>
+          </>
+        )}
+
+        {/* Backpack (Crew) */}
+        {charVariation.type === 'crewmate' && (
+          <mesh position={[-0.3, 1.0, 0]}>
+            <boxGeometry args={[0.3, 0.5, 0.4]} />
+            <meshStandardMaterial color={color} roughness={0.3} metalness={0.2} />
+          </mesh>
+        )}
+
+        {/* Knife Accessory */}
+        <mesh position={[0.4, 0.8, 0.3]} rotation={[0, 0, Math.PI / 4]}>
+          <boxGeometry args={[0.1, 0.4, 0.05]} />
+          <meshStandardMaterial color="#c0c0c0" metalness={1} roughness={0.1} />
         </mesh>
 
-        {/* Thrusters / Rotors with subtle hover emission */}
-        <mesh castShadow position={[0.5, 1.2, 0.5]}>
-          <cylinderGeometry args={[0.2, 0.2, 0.1, 8]} />
-          <meshStandardMaterial color="#222" emissive={glowColor} emissiveIntensity={0.5} />
-        </mesh>
-        <mesh castShadow position={[-0.5, 1.2, 0.5]}>
-          <cylinderGeometry args={[0.2, 0.2, 0.1, 8]} />
-          <meshStandardMaterial color="#222" emissive={glowColor} emissiveIntensity={0.5} />
-        </mesh>
-        <mesh castShadow position={[0.5, 1.2, -0.5]}>
-          <cylinderGeometry args={[0.2, 0.2, 0.1, 8]} />
-          <meshStandardMaterial color="#222" emissive={glowColor} emissiveIntensity={0.5} />
-        </mesh>
-        <mesh castShadow position={[-0.5, 1.2, -0.5]}>
-          <cylinderGeometry args={[0.2, 0.2, 0.1, 8]} />
-          <meshStandardMaterial color="#222" emissive={glowColor} emissiveIntensity={0.5} />
-        </mesh>
 
         {/* Username Label */}
         <Text

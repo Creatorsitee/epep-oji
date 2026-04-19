@@ -88,6 +88,12 @@ export function Arena() {
       <Wall name="wall-e" position={[100, 5, 0]} rotation={[0, -Math.PI / 2, 0]} isMobile={isMobile} />
       <Wall name="wall-w" position={[-100, 5, 0]} rotation={[0, Math.PI / 2, 0]} isMobile={isMobile} />
 
+      {/* Particles */}
+      <AmbientParticles />
+
+      {/* Hewan Dekorasi */}
+      <Animals />
+
       {/* Obstacles */}
       {obstacles.map((obs, i) => {
         if (!obs) return null;
@@ -115,6 +121,45 @@ export function Arena() {
           </RigidBody>
         );
       })}
+    </group>
+  );
+}
+
+function Animals() {
+  const animalCount = 10;
+  
+  const animals = useMemo(() => {
+    return Array.from({ length: animalCount }).map((_, i) => ({
+      position: [(Math.random() - 0.5) * 150, 0.5, (Math.random() - 0.5) * 150] as [number, number, number],
+      id: i
+    }));
+  }, []);
+
+  return (
+    <group>
+      {animals.map((animal) => (
+        <RigidBody key={animal.id} type="fixed" colliders={false} position={animal.position}>
+          {/* Main Body */}
+          <mesh castShadow>
+            <boxGeometry args={[0.6, 0.4, 0.8]} />
+            <meshStandardMaterial color="#8B4513" />
+          </mesh>
+          {/* Head */}
+          <mesh castShadow position={[0, 0.3, 0.4]}>
+            <sphereGeometry args={[0.25, 8, 8]} />
+            <meshStandardMaterial color="#8B4513" />
+          </mesh>
+          {/* Eyes */}
+          <mesh position={[0.1, 0.35, 0.55]}>
+            <sphereGeometry args={[0.05, 8, 8]} />
+            <meshBasicMaterial color="#000" />
+          </mesh>
+          <mesh position={[-0.1, 0.35, 0.55]}>
+            <sphereGeometry args={[0.05, 8, 8]} />
+            <meshBasicMaterial color="#000" />
+          </mesh>
+        </RigidBody>
+      ))}
     </group>
   );
 }
