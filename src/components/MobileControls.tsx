@@ -140,7 +140,7 @@ export function MobileControls() {
   return (
     <div className="absolute inset-0 pointer-events-none z-50 flex select-none overflow-hidden touch-none">
       {/* Left Area - Movement Joystick */}
-      <div className="w-2/5 h-full flex items-end justify-start p-8 md:p-12 pointer-events-auto">
+      <div className="w-2/5 h-full flex items-end justify-start p-4 md:p-12 pointer-events-auto pb-6 md:pb-12">
         <Joystick 
           label="Gerak"
           onMove={(x, y) => setMobileInput({ move: { x, y } })} 
@@ -155,7 +155,7 @@ export function MobileControls() {
         onPointerUp={handleTrackpadPointerUp}
       >
         {/* Actions Container (Lower Right) */}
-        <div className="absolute bottom-8 right-8 flex items-end gap-3 pointer-events-none pb-2 pr-2">
+        <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 flex items-end gap-3 pointer-events-none pb-2 pr-2">
           
           <div className="flex flex-col gap-3">
              <button

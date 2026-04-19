@@ -3,7 +3,7 @@
   "short_name": "FREE FIRE",
   "description": "Battle Royale Arena - Survival of the Fittest",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#0a0a0c",
   "theme_color": "#f59e0b",
   "orientation": "landscape",

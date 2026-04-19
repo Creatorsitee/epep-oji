@@ -13,7 +13,7 @@ import { Effects } from './Effects';
 import { useGameStore } from '../store';
 import { EffectComposer, Bloom, ChromaticAberration, Vignette } from '@react-three/postprocessing';
 import { useShallow } from 'zustand/react/shallow';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import * as THREE from 'three';
 
 function useIsMobile() {
@@ -79,7 +79,9 @@ export function Game() {
       
       <Physics gravity={[0, -20, 0]}>
         <GameLoop />
-        <Arena />
+        <Suspense fallback={null}>
+          <Arena />
+        </Suspense>
         <Player />
         {enemies.map(enemy => (
           <Enemy key={enemy.id} data={enemy} />
