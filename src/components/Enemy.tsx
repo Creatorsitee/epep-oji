@@ -173,7 +173,7 @@ export function Enemy({ data }: { data: EnemyData }) {
 
   // Rotate to face direction
     if (groupRef.current && direction.lengthSq() > 0.1) {
-      const targetRotation = Math.atan2(direction.x, direction.z);
+      const targetRotation = Math.atan2(-direction.z, direction.x);
       const currentRotation = groupRef.current.rotation.y;
       let diff = targetRotation - currentRotation;
       while (diff < -Math.PI) diff += Math.PI * 2;
