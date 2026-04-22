@@ -13,8 +13,11 @@ import { playSound } from './utils/audio';
 export type GameState = 'menu' | 'playing' | 'gameover';
 export type EntityState = 'active' | 'disabled';
 
+export type EnemyType = 'grunt' | 'runner' | 'brute';
+
 export interface EnemyData {
   id: string;
+  type: EnemyType;
   position: [number, number, number];
   state: EntityState;
   disabledUntil: number;
@@ -145,6 +148,10 @@ interface GameStore {
   pickups: PickupData[];
   events: GameEvent[];
   
+  // Maps
+  currentMap: 'city' | 'forest';
+  setMap: (map: 'city' | 'forest') => void;
+
   // Economy & Store
   coins: number;
   ownedWeapons: string[];
@@ -201,16 +208,16 @@ interface GameStore {
 }
 
 const INITIAL_ENEMIES: EnemyData[] = [
-  { id: 'bot-1', position: [40, 1, 40], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-2', position: [-40, 1, 40], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-3', position: [40, 1, -40], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-4', position: [-40, 1, -40], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-5', position: [0, 1, -50], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-6', position: [60, 1, 0], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-7', position: [-60, 1, 0], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-8', position: [0, 1, 50], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-9', position: [30, 1, 70], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
-  { id: 'bot-10', position: [-70, 1, -30], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
+  { id: 'bot-1', type: 'grunt', position: [40, 1, 40], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
+  { id: 'bot-2', type: 'runner', position: [-40, 1, 40], state: 'active', disabledUntil: 0, hp: 60, maxHp: 60 },
+  { id: 'bot-3', type: 'brute', position: [40, 1, -40], state: 'active', disabledUntil: 0, hp: 300, maxHp: 300 },
+  { id: 'bot-4', type: 'grunt', position: [-40, 1, -40], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
+  { id: 'bot-5', type: 'runner', position: [0, 1, -50], state: 'active', disabledUntil: 0, hp: 60, maxHp: 60 },
+  { id: 'bot-6', type: 'grunt', position: [60, 1, 0], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
+  { id: 'bot-7', type: 'brute', position: [-60, 1, 0], state: 'active', disabledUntil: 0, hp: 300, maxHp: 300 },
+  { id: 'bot-8', type: 'runner', position: [0, 1, 50], state: 'active', disabledUntil: 0, hp: 60, maxHp: 60 },
+  { id: 'bot-9', type: 'grunt', position: [30, 1, 70], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
+  { id: 'bot-10', type: 'grunt', position: [-70, 1, -30], state: 'active', disabledUntil: 0, hp: 100, maxHp: 100 },
 ];
 
 export const useGameStore = create<GameStore>()(
@@ -235,6 +242,10 @@ export const useGameStore = create<GameStore>()(
       pickups: [],
       events: [],
       
+      // Maps
+      currentMap: 'city',
+      setMap: (map) => set({ currentMap: map }),
+
       // Economy & Store
       coins: 0,
       ownedWeapons: ['default'],

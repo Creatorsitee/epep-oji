@@ -11,15 +11,24 @@ import { useGameStore, EnemyData } from '../store';
 import { Text } from '@react-three/drei';
 import { playSound } from '../utils/audio';
 
-const ENEMY_SPEED = 2.5; // Slightly slower
-const CHASE_DIST = 15;
-const SHOOT_DIST = 15;
-const SHOOT_COOLDOWN = 3500; // Increased from 2000 for less aggressive shooting
-
 export function Enemy({ data }: { data: EnemyData }) {
   const body = useRef<RapierRigidBody>(null);
   const { camera } = useThree();
   const { world, rapier } = useRapier();
+
+  const { 
+    speed, 
+    chaseDist, 
+    shootDist, 
+    shootCooldown 
+  } = useMemo(() => {
+    switch(data.type) {
+      case 'runner': return { speed: 5.0, chaseDist: 25, shootDist: 10, shootCooldown: 1500 };
+      case 'brute': return { speed: 1.5, chaseDist: 20, shootDist: 25, shootCooldown: 4000 };
+      case 'grunt':
+      default: return { speed: 2.5, chaseDist: 15, shootDist: 15, shootCooldown: 3000 };
+    }
+  }, [data.type]);
   
   const gameState = useGameStore(state => state.gameState);
   const playerState = useGameStore(state => state.playerState);
@@ -63,7 +72,7 @@ export function Enemy({ data }: { data: EnemyData }) {
     const now = Date.now();
     
     let closestTargetPos: THREE.Vector3 | null = null;
-    let closestDist = CHASE_DIST;
+    let closestDist = chaseDist;
 
     // Check player
     if (playerState === 'active') {
@@ -136,7 +145,7 @@ export function Enemy({ data }: { data: EnemyData }) {
       }
       
       // Shooting logic
-      if (closestDist < SHOOT_DIST && now - lastShootTime.current > SHOOT_COOLDOWN) {
+      if (closestDist < shootDist && now - lastShootTime.current > shootCooldown) {
         
         // Lead the target: predict future position based on velocity and distance
         const bulletTravelTime = closestDist / 40; 
@@ -156,7 +165,7 @@ export function Enemy({ data }: { data: EnemyData }) {
         startPos.add(rayDir.clone().multiplyScalar(1.5));
 
         const ray = new rapier.Ray(startPos, rayDir);
-        const hit = world.castRay(ray, SHOOT_DIST, true);
+        const hit = world.castRay(ray, shootDist, true);
 
         if (hit) {
           const collider = hit.collider;
@@ -237,9 +246,9 @@ export function Enemy({ data }: { data: EnemyData }) {
     // Apply movement
     const velocity = body.current.linvel();
     body.current.setLinvel({
-      x: direction.x * ENEMY_SPEED,
+      x: direction.x * speed,
       y: velocity.y,
-      z: direction.z * ENEMY_SPEED
+      z: direction.z * speed
     }, true);
 
   // Rotate to face direction
@@ -268,18 +277,31 @@ export function Enemy({ data }: { data: EnemyData }) {
   });
 
   const charVariation = useMemo(() => {
-    const idNum = parseInt(data.id.split('-')[1] || '0');
-    // Zombie if divisible by 5, else crewmate
-    const type = idNum % 5 === 0 ? 'zombie' : 'crewmate';
-    const colors = ['#C51111', '#132ED2', '#117F2D', '#ED54BA', '#EF7D0D', '#F5F557', '#3F474E', '#71491E', '#50EF39', '#7E30C8'];
-    const zombieColors = ['#4A704A', '#556B2F', '#3B4A3B'];
-    
-    return {
-      type,
-      color: type === 'zombie' ? zombieColors[idNum % zombieColors.length] : colors[idNum % colors.length],
-      visorColor: '#96E0F4'
-    };
-  }, [data.id]);
+    switch (data.type) {
+      case 'runner':
+        return {
+          color: '#eab308', // Yellow
+          visorColor: '#ffffff',
+          scale: [0.8, 0.9, 0.8] as [number, number, number],
+          label: 'RUNNER'
+        };
+      case 'brute':
+        return {
+          color: '#ef4444', // Red
+          visorColor: '#000000',
+          scale: [1.5, 1.2, 1.5] as [number, number, number],
+          label: 'BRUTE'
+        };
+      case 'grunt':
+      default:
+        return {
+          color: '#3b82f6', // Blue
+          visorColor: '#96E0F4',
+          scale: [1, 1, 1] as [number, number, number],
+          label: 'GRUNT'
+        };
+    }
+  }, [data.type]);
 
   const color = data.state === 'disabled' ? '#222' : charVariation.color;
 
@@ -287,67 +309,57 @@ export function Enemy({ data }: { data: EnemyData }) {
     <RigidBody
       ref={body}
       colliders={false}
-      mass={1}
+      mass={data.type === 'brute' ? 5 : 1}
       type="dynamic"
       position={data.position}
       enabledRotations={[false, false, false]}
       userData={{ name: data.id }}
     >
-      <CapsuleCollider args={[0.5, 0.5]} position={[0, 1, 0]} />
-      <group ref={groupRef} position={[0, 0, 0]} visible={data.state === 'active'}>
+      <CapsuleCollider args={[0.5 * charVariation.scale[0], 0.5 * charVariation.scale[1]]} position={[0, 1 * charVariation.scale[1], 0]} />
+      <group ref={groupRef} position={[0, 0, 0]} visible={data.state === 'active'} scale={charVariation.scale}>
         {/* Character Body */}
         <mesh castShadow position={[0, 1.0, 0]}>
-          <capsuleGeometry args={[0.5, charVariation.type === 'zombie' ? 1.0 : 0.8, 4, 8]} />
-          <meshStandardMaterial color={color} roughness={charVariation.type === 'zombie' ? 0.8 : 0.3} metalness={charVariation.type === 'zombie' ? 0.1 : 0.2} />
+          <capsuleGeometry args={[0.5, 0.8, 4, 8]} />
+          <meshStandardMaterial color={color} roughness={0.3} metalness={0.2} />
         </mesh>
         
         {/* Visor / Eyes */}
-        {charVariation.type === 'crewmate' ? (
-          <mesh position={[0.4, 1.2, 0]}>
-            <capsuleGeometry args={[0.2, 0.4, 4, 8]} />
-            <meshStandardMaterial color={charVariation.visorColor} roughness={0.1} metalness={0.9} />
-          </mesh>
-        ) : (
-          /* Zombie Eyes */
-          <>
-            <mesh position={[0.3, 1.3, 0.25]}>
-              <sphereGeometry args={[0.1, 8, 8]} />
-              <meshBasicMaterial color="#ff0000" />
-            </mesh>
-            <mesh position={[0.3, 1.3, -0.25]}>
-              <sphereGeometry args={[0.1, 8, 8]} />
-              <meshBasicMaterial color="#ff0000" />
-            </mesh>
-          </>
-        )}
-
-        {/* Backpack (Crew) */}
-        {charVariation.type === 'crewmate' && (
-          <mesh position={[-0.3, 1.0, 0]}>
-            <boxGeometry args={[0.3, 0.5, 0.4]} />
-            <meshStandardMaterial color={color} roughness={0.3} metalness={0.2} />
-          </mesh>
-        )}
-
-        {/* Knife Accessory */}
-        <mesh position={[0.4, 0.8, 0.3]} rotation={[0, 0, Math.PI / 4]}>
-          <boxGeometry args={[0.1, 0.4, 0.05]} />
-          <meshStandardMaterial color="#c0c0c0" metalness={1} roughness={0.1} />
+        <mesh position={[0.4, 1.2, 0]}>
+          <capsuleGeometry args={[0.2, 0.4, 4, 8]} />
+          <meshStandardMaterial color={charVariation.visorColor} roughness={0.1} metalness={0.9} emissive={data.type === 'runner' ? charVariation.color : '#000000'} emissiveIntensity={0.5} />
         </mesh>
 
+        {/* Backpack */}
+        <mesh position={[-0.3, 1.0, 0]}>
+          <boxGeometry args={[0.3, 0.5, 0.4]} />
+          <meshStandardMaterial color={color} roughness={0.3} metalness={0.2} />
+        </mesh>
+
+        {/* Weapons/Accessories based on type */}
+        {data.type === 'runner' && (
+           <mesh position={[0.4, 0.8, 0.3]} rotation={[0, 0, Math.PI / 4]}>
+             <boxGeometry args={[0.1, 0.4, 0.05]} />
+             <meshStandardMaterial color="#c0c0c0" metalness={1} roughness={0.1} />
+           </mesh>
+        )}
+        {data.type === 'brute' && (
+           <mesh position={[0.5, 1.0, 0.4]} rotation={[Math.PI/2, 0, 0]}>
+             <cylinderGeometry args={[0.1, 0.1, 0.8, 8]} />
+             <meshStandardMaterial color="#333" metalness={0.8} />
+           </mesh>
+        )}
 
         {/* Username Label */}
         <Text
           position={[0, 2.0, 0]}
-
           fontSize={0.3}
-          color={data.state === 'active' ? '#ffaa00' : '#666666'}
+          color={data.state === 'active' ? (data.type === 'brute' ? '#ef4444' : '#ffaa00') : '#666666'}
           anchorX="center"
           anchorY="middle"
           outlineWidth={0.02}
           outlineColor="#000000"
         >
-          {data.id}
+          {charVariation.label}
         </Text>
 
         {/* HP Bar */}

@@ -347,6 +347,7 @@ export default function App() {
   const deferredPrompt = useGameStore(state => state.deferredPrompt);
   const setDeferredPrompt = useGameStore(state => state.setDeferredPrompt);
   const startGame = useGameStore(state => state.startGame);
+  const currentMap = useGameStore(state => state.currentMap);
   const isMobile = useIsMobile();
 
   const [showStore, setShowStore] = useState(false);
@@ -482,6 +483,24 @@ export default function App() {
                   transition={{ delay: 0.3 }}
                   className="flex flex-col gap-2 md:gap-4 w-full max-w-[280px] md:max-w-xl shrink-0"
                 >
+                  <div className="flex flex-col gap-1 w-full mt-2">
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest text-center">PILIH ZONA TEMPUR:</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); useGameStore.getState().setMap('city'); }}
+                        className={`flex-1 px-2 py-3 md:py-4 border-2 uppercase font-black italic tracking-widest text-[10px] md:text-sm transition-colors rounded-sm ${currentMap === 'city' ? 'bg-amber-600/30 border-amber-500 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-black/60 border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500'}`}
+                      >
+                        🏙️ KOTA MATI
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); useGameStore.getState().setMap('forest'); }}
+                        className={`flex-1 px-2 py-3 md:py-4 border-2 uppercase font-black italic tracking-widest text-[10px] md:text-sm transition-colors rounded-sm ${currentMap === 'forest' ? 'bg-green-600/30 border-green-500 text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-black/60 border-zinc-700 text-zinc-500 hover:text-zinc-300 hover:border-zinc-500'}`}
+                      >
+                        🌲 HUTAN RIMBA
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     onClick={() => {
                       if (isMobile && document.documentElement.requestFullscreen) {
