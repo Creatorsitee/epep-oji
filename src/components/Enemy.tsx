@@ -31,6 +31,13 @@ export function Enemy({ data }: { data: EnemyData }) {
   const patrolTarget = useRef(new THREE.Vector3());
   const lastPatrolChange = useRef(0);
   const state = useRef<'patrol' | 'chase'>('patrol');
+  
+  // Advanced AI refs
+  const lastTargetPos = useRef<THREE.Vector3 | null>(null);
+  const targetVelocity = useRef(new THREE.Vector3());
+  const strafeDir = useRef(Math.random() > 0.5 ? 1 : -1);
+  const lastStrafeChange = useRef(Date.now());
+  const lastSteeringChange = useRef(0);
 
   const groupRef = useRef<THREE.Group>(null);
 
@@ -53,6 +60,7 @@ export function Enemy({ data }: { data: EnemyData }) {
 
     const pos = body.current.translation();
     const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+    const now = Date.now();
     
     let closestTargetPos: THREE.Vector3 | null = null;
     let closestDist = CHASE_DIST;
@@ -81,7 +89,20 @@ export function Enemy({ data }: { data: EnemyData }) {
       }
     });
 
-    // AI Logic
+    // Calculate target velocity for leading shots
+    if (closestTargetPos) {
+      if (lastTargetPos.current) {
+        // Simplified velocity estimation
+        targetVelocity.current.subVectors(closestTargetPos, lastTargetPos.current).multiplyScalar(0.5);
+      } else {
+        targetVelocity.current.set(0, 0, 0);
+      }
+      lastTargetPos.current = closestTargetPos.clone();
+    } else {
+      lastTargetPos.current = null;
+    }
+
+    // State Machine
     if (closestTargetPos) {
       state.current = 'chase';
     } else if (state.current === 'chase') {
@@ -91,7 +112,7 @@ export function Enemy({ data }: { data: EnemyData }) {
         currentPos.y,
         currentPos.z + (Math.random() - 0.5) * 40
       );
-      lastPatrolChange.current = Date.now();
+      lastPatrolChange.current = now;
     }
 
     const direction = new THREE.Vector3();
@@ -99,15 +120,33 @@ export function Enemy({ data }: { data: EnemyData }) {
     if (state.current === 'chase' && closestTargetPos) {
       direction.subVectors(closestTargetPos, currentPos).normalize();
       
+      // Proximity Behaviors
+      if (closestDist < 6) {
+        // Overly close: Flee / Back up to maintain distance
+        direction.negate();
+      } else if (closestDist < 12) {
+        // Combat range: Strafe around the target
+        if (now - lastStrafeChange.current > 1500 + Math.random() * 2000) {
+          strafeDir.current *= -1;
+          lastStrafeChange.current = now;
+        }
+        const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(strafeDir.current);
+        // Blend movement: 30% towards target, 70% strafing sidewards
+        direction.multiplyScalar(0.3).add(perpendicular.multiplyScalar(0.7)).normalize();
+      }
+      
       // Shooting logic
-      const now = Date.now();
       if (closestDist < SHOOT_DIST && now - lastShootTime.current > SHOOT_COOLDOWN) {
         playSound('enemyShoot');
-        // Raycast to check line of sight
-        const rayDir = new THREE.Vector3().subVectors(closestTargetPos, currentPos).normalize();
         
-        // Add random spread so they miss sometimes
-        const spread = 0.15;
+        // Lead the target: predict future position based on velocity and distance
+        const bulletTravelTime = closestDist / 40; 
+        const predictedPos = closestTargetPos.clone().add(targetVelocity.current.clone().multiplyScalar(bulletTravelTime));
+        
+        const rayDir = new THREE.Vector3().subVectors(predictedPos, currentPos).normalize();
+        
+        // Add random spread based on distance (closer = more accurate)
+        const spread = Math.min(0.15, closestDist * 0.008);
         rayDir.x += (Math.random() - 0.5) * spread;
         rayDir.y += (Math.random() - 0.5) * spread;
         rayDir.z += (Math.random() - 0.5) * spread;
@@ -150,7 +189,6 @@ export function Enemy({ data }: { data: EnemyData }) {
       }
     } else {
       // Patrol
-      const now = Date.now();
       // Change target if reached or if stuck for 4 seconds
       if (currentPos.distanceTo(patrolTarget.current) < 2 || now - lastPatrolChange.current > 4000) {
         patrolTarget.current.set(
@@ -161,6 +199,28 @@ export function Enemy({ data }: { data: EnemyData }) {
         lastPatrolChange.current = now;
       }
       direction.subVectors(patrolTarget.current, currentPos).normalize();
+    }
+
+    // Raycast Obstacle Avoidance (Steering)
+    if (direction.lengthSq() > 0.01) {
+      const avoidDist = 3.5;
+      const avoidRayStart = new THREE.Vector3(currentPos.x, currentPos.y + 0.5, currentPos.z);
+      const avoidRay = new rapier.Ray(avoidRayStart, direction);
+      const hit = world.castRay(avoidRay, avoidDist, true);
+      
+      // If we hit something that is NOT a player or another bot (e.g. wall/obstacle)
+      if (hit && hit.collider && hit.collider.parent()?.userData) {
+        const uName = (hit.collider.parent()?.userData as { name?: string })?.name;
+        if (uName !== 'player' && !uName?.startsWith('bot-')) {
+          // Adjust steering direction perpendicularly
+          if (now - lastSteeringChange.current > 1000) {
+             strafeDir.current = Math.random() > 0.5 ? 1 : -1;
+             lastSteeringChange.current = now;
+          }
+          const steerRight = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(strafeDir.current);
+          direction.add(steerRight.multiplyScalar(2.0)).normalize();
+        }
+      }
     }
 
     // Apply movement

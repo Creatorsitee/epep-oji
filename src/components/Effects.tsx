@@ -11,6 +11,7 @@ import { useRef, useMemo, useEffect } from 'react';
 export function Effects() {
   const lasers = useGameStore(state => state.lasers);
   const particles = useGameStore(state => state.particles);
+  const pickups = useGameStore(state => state.pickups);
 
   return (
     <>
@@ -20,7 +21,52 @@ export function Effects() {
       {particles.map(p => (
         <ParticleBurst key={p.id} position={p.position} color={p.color} />
       ))}
+      {pickups.map(p => (
+        <PickupVisual key={p.id} data={p} />
+      ))}
     </>
+  );
+}
+
+function PickupVisual({ data }: { data: any }) {
+  const ref = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.rotation.y += 0.02;
+      ref.current.position.y = data.position[1] + Math.sin(state.clock.elapsedTime * 3) * 0.2;
+    }
+  });
+
+  return (
+    <group ref={ref} position={data.position}>
+      {data.type === 'health' ? (
+        <mesh>
+          <boxGeometry args={[0.6, 0.6, 0.6]} />
+          <meshStandardMaterial color="#22c55e" metalness={0.2} roughness={0.5} />
+          {/* Medical Cross */}
+          <mesh position={[0, 0, 0.31]}>
+            <boxGeometry args={[0.1, 0.4, 0.02]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[0, 0, 0.31]}>
+            <boxGeometry args={[0.4, 0.1, 0.02]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        </mesh>
+      ) : (
+        <mesh>
+          <boxGeometry args={[0.7, 0.4, 0.5]} />
+          <meshStandardMaterial color="#eab308" metalness={0.8} roughness={0.2} />
+          {/* Ammo Symbol */}
+          <mesh position={[0, 0.21, 0]}>
+            <boxGeometry args={[0.3, 0.02, 0.1]} />
+            <meshBasicMaterial color="#000000" />
+          </mesh>
+        </mesh>
+      )}
+      <pointLight color={data.type === 'health' ? '#22c55e' : '#eab308'} intensity={0.5} distance={3} />
+    </group>
   );
 }
 

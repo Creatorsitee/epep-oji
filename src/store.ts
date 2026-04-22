@@ -48,6 +48,13 @@ export interface ParticleData {
   color: string;
 }
 
+export interface PickupData {
+  id: string;
+  type: 'health' | 'ammo';
+  position: [number, number, number];
+  active: boolean;
+}
+
 export interface GameEvent {
   id: string;
   message: string;
@@ -135,6 +142,7 @@ interface GameStore {
   enemies: EnemyData[];
   lasers: LaserData[];
   particles: ParticleData[];
+  pickups: PickupData[];
   events: GameEvent[];
   
   // Economy & Store
@@ -160,6 +168,9 @@ interface GameStore {
   updateTime: (delta: number) => void;
   hitPlayer: () => void;
   healPlayer: (amount: number) => void;
+  addAmmo: (amount: number) => void;
+  addPickup: (pickup: PickupData) => void;
+  consumePickup: (id: string) => void;
   hitEnemy: (id: string, byPlayer?: boolean) => void;
   addLaser: (start: [number, number, number], end: [number, number, number], color: string) => void;
   addParticles: (position: [number, number, number], color: string) => void;
@@ -221,6 +232,7 @@ export const useGameStore = create<GameStore>()(
       enemies: [],
       lasers: [],
       particles: [],
+      pickups: [],
       events: [],
       
       // Economy & Store
@@ -537,6 +549,23 @@ export const useGameStore = create<GameStore>()(
     playerHp: Math.min(state.maxPlayerHp, state.playerHp + amount)
   })),
 
+  addAmmo: (amount: number) => set((state) => {
+    return {
+      ammo: Math.min(state.maxAmmo, state.ammo + amount),
+      events: [...state.events, { id: Math.random().toString(), message: `Picked up AMMO (+${amount})`, timestamp: Date.now() }]
+    };
+  }),
+
+  addPickup: (pickup: PickupData) => set((state) => {
+    return { pickups: [...state.pickups, pickup] };
+  }),
+
+  consumePickup: (id: string) => set((state) => {
+    return {
+      pickups: state.pickups.filter(p => p.id !== id)
+    };
+  }),
+
   hitEnemy: (id, byPlayer = false) => set((state) => {
     if (state.gameState !== 'playing') return state;
     
@@ -555,6 +584,16 @@ export const useGameStore = create<GameStore>()(
         if (newHp === 0) {
           enemyWasKilled = true;
           playSound('zombie'); // Suara kematian bot (zombie style)
+          
+          // Spawn drop (60% chance for ammo, 40% chance for health)
+          const isHealth = Math.random() > 0.6;
+          get().addPickup({
+            id: Math.random().toString(),
+            type: isHealth ? 'health' : 'ammo',
+            position: [e.position[0], e.position[1] + 1, e.position[2]], // Float slightly above ground
+            active: true
+          });
+
           return { 
             ...e, 
             hp: 0, 

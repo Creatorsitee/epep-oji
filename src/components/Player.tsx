@@ -109,6 +109,16 @@ export function Player() {
       return;
     }
 
+    // Visual Recoil (Senjata terdorong)
+    if (gunVisualRef.current) {
+      gunVisualRef.current.position.z += 0.15;
+      gunVisualRef.current.rotation.x += 0.1;
+    }
+    
+    // Screen Shake (Kamera menendang)
+    camera.rotation.x += (Math.random() * 0.05 + 0.02);
+    camera.rotation.y += (Math.random() - 0.5) * 0.02;
+
     lastShootTime.current = now;
     playSound('shoot', currentWeapon.soundPitch);
 
@@ -254,6 +264,26 @@ export function Player() {
     }
 
     body.current.setLinvel({ x: direction.x, y: jumpImpulse > 0 ? jumpImpulse : velocity.y, z: direction.z }, true);
+
+    // Pickups collision logic
+    const { pickups, consumePickup, healPlayer, addAmmo } = useGameStore.getState();
+    const playerPos = new THREE.Vector3(bodyPos.x, bodyPos.y, bodyPos.z);
+    pickups.forEach(p => {
+      if (p.active) {
+        const itemPos = new THREE.Vector3(p.position[0], p.position[1], p.position[2]);
+        if (playerPos.distanceTo(itemPos) < 2) {
+           if (p.type === 'health') {
+             healPlayer(50);
+             playSound('jump'); // Feedback sound
+             consumePickup(p.id);
+           } else if (p.type === 'ammo') {
+             addAmmo(30);
+             playSound('reload');
+             consumePickup(p.id);
+           }
+        }
+      }
+    });
 
     // Mobile Look Rotation (Trackpad Style)
     if (Math.abs(mobileInput.look.x) > 0.001 || Math.abs(mobileInput.look.y) > 0.001) {
