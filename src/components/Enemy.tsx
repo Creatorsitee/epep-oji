@@ -121,23 +121,22 @@ export function Enemy({ data }: { data: EnemyData }) {
       direction.subVectors(closestTargetPos, currentPos).normalize();
       
       // Proximity Behaviors
-      if (closestDist < 6) {
-        // Overly close: Flee / Back up to maintain distance
-        direction.negate();
-      } else if (closestDist < 12) {
-        // Combat range: Strafe around the target
-        if (now - lastStrafeChange.current > 1500 + Math.random() * 2000) {
+      if (closestDist < 4) {
+        // Overly close: Evasive maneuvers (back up quickly and optionally jump)
+        direction.negate().multiplyScalar(1.5);
+      } else if (closestDist < 10) {
+        // Combat range: Strafe around the target (within 10 units)
+        if (now - lastStrafeChange.current > 1000 + Math.random() * 1500) {
           strafeDir.current *= -1;
           lastStrafeChange.current = now;
         }
         const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(strafeDir.current);
-        // Blend movement: 30% towards target, 70% strafing sidewards
-        direction.multiplyScalar(0.3).add(perpendicular.multiplyScalar(0.7)).normalize();
+        // Blend movement: 20% towards target, 80% strafing sidewards
+        direction.multiplyScalar(0.2).add(perpendicular.multiplyScalar(0.8)).normalize();
       }
       
       // Shooting logic
       if (closestDist < SHOOT_DIST && now - lastShootTime.current > SHOOT_COOLDOWN) {
-        playSound('enemyShoot');
         
         // Lead the target: predict future position based on velocity and distance
         const bulletTravelTime = closestDist / 40; 
@@ -162,12 +161,16 @@ export function Enemy({ data }: { data: EnemyData }) {
         if (hit) {
           const collider = hit.collider;
           const rb = collider.parent();
+          
+          let targetIsPlayer = false;
+          
           if (rb && rb.userData) {
             const userData = rb.userData as { name?: string };
             const hitPoint = ray.pointAt(hit.timeOfImpact);
             
             if (userData.name === 'player') {
               hitPlayer();
+              targetIsPlayer = true;
               addParticles([camera.position.x, camera.position.y, camera.position.z], '#ff5500');
               addLaser([startPos.x, startPos.y, startPos.z], [camera.position.x, camera.position.y, camera.position.z], '#ffaa00');
               lastShootTime.current = now;
@@ -185,16 +188,24 @@ export function Enemy({ data }: { data: EnemyData }) {
             addLaser([startPos.x, startPos.y, startPos.z], [hitPoint.x, hitPoint.y, hitPoint.z], '#ff8800');
             lastShootTime.current = now;
           }
+          
+          if (targetIsPlayer) {
+            playSound('enemyShoot');
+          }
         }
       }
     } else {
-      // Patrol
-      // Change target if reached or if stuck for 4 seconds
-      if (currentPos.distanceTo(patrolTarget.current) < 2 || now - lastPatrolChange.current > 4000) {
+      // Patrol: Dynamic pathing
+      // Change target if reached, stuck for 3 seconds, or randomly exploring a new sector
+      if (currentPos.distanceTo(patrolTarget.current) < 2 || now - lastPatrolChange.current > 3000) {
+        
+        // Randomly pick between long-range patrol or short-range wandering
+        const patrolRadius = Math.random() > 0.5 ? 20 : 50;
+        
         patrolTarget.current.set(
-          currentPos.x + (Math.random() - 0.5) * 60,
+          currentPos.x + (Math.random() - 0.5) * patrolRadius,
           currentPos.y,
-          currentPos.z + (Math.random() - 0.5) * 60
+          currentPos.z + (Math.random() - 0.5) * patrolRadius
         );
         lastPatrolChange.current = now;
       }

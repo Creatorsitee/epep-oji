@@ -257,8 +257,8 @@ function HUD() {
             <span className="text-amber-500 font-black text-xs md:text-sm">C</span>
             <span className="text-amber-500 font-bold text-[8px] md:text-[10px]">{coins.toLocaleString()}</span>
           </div>
-          <div className={`text-[7px] md:text-[9px] font-black px-1.5 py-0.5 rounded border ${socket ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors bg-black/40`}>
-            {socket ? 'ONLINE' : 'OFFLINE'}
+          <div className={`text-[7px] md:text-[9px] font-black px-1.5 py-0.5 rounded border ${socket ? 'text-blue-500 border-blue-500/30' : typeof navigator !== 'undefined' && navigator.onLine ? 'text-green-500 border-green-500/30' : 'text-zinc-500 border-zinc-500/30'} uppercase transition-colors bg-black/40`}>
+            {socket ? 'MULTIPLAYER' : (typeof navigator !== 'undefined' && navigator.onLine ? 'SOLO (ONLINE)' : 'SOLO (OFFLINE)')}
           </div>
         </div>
         <button
@@ -525,11 +525,11 @@ export default function App() {
                         <div className="text-[6px] md:text-[8px] text-zinc-500 uppercase font-black mt-0.5 md:mt-1">MAIN OFFLINE</div>
                       </button>
                     ) : (
-                      <div className="flex flex-col justify-center items-center text-center text-[6px] md:text-[8px] text-zinc-500 font-bold uppercase tracking-widest bg-zinc-900/50 py-1.5 md:py-0 rounded-sm border border-zinc-800 h-full">
-                        LAT: 4.21S / LON: 101.44E<br/>
-                        <span className="text-green-500/80 mt-1 flex items-center justify-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                          <span className="hidden sm:inline">STATUS:</span> ONLINE
+                      <div className="flex flex-col justify-center items-center text-center text-[6px] md:text-[8px] text-zinc-500 font-bold uppercase tracking-widest bg-zinc-900/50 py-1.5 md:py-0 rounded-sm border border-zinc-800 h-full px-2">
+                        PWA READY<br/>
+                        <span className={`mt-1 flex items-center justify-center gap-1 ${typeof navigator !== 'undefined' && navigator.onLine ? 'text-green-500/80' : 'text-zinc-500/80'}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${typeof navigator !== 'undefined' && navigator.onLine ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                          <span className="hidden sm:inline">STATUS:</span> {typeof navigator !== 'undefined' && navigator.onLine ? 'JARINGAN OK' : 'OFFLINE'}
                         </span>
                       </div>
                     )}

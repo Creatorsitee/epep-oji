@@ -337,7 +337,8 @@ export const useGameStore = create<GameStore>()(
       newSocket.on('connect_error', () => {
         if (!get().socket) { // Only log if we haven't successfully connected
           console.warn("Socket connection failed. Staying in solo mode...");
-          get().addEvent("KONEKSI GAGAL: MODE SOLO");
+          get().addEvent("NO MULTIPLAYER SERVER: SOLO MODE");
+          newSocket?.disconnect(); // Hentikan auto-reconnect karena kita di Vercel/Static hosting
         }
       });
 

@@ -114,10 +114,6 @@ export function Player() {
       gunVisualRef.current.position.z += 0.15;
       gunVisualRef.current.rotation.x += 0.1;
     }
-    
-    // Screen Shake (Kamera menendang)
-    camera.rotation.x += (Math.random() * 0.05 + 0.02);
-    camera.rotation.y += (Math.random() - 0.5) * 0.02;
 
     lastShootTime.current = now;
     playSound('shoot', currentWeapon.soundPitch);
